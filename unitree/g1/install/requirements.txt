@@ -1,0 +1,22 @@
+# Robotics Connect — Python requirements delta on top of the cloned
+# `unitree_deploy` conda env.
+#
+# Audit result (as of 2026-04-17): the factory env is a superset of
+# what Robotics Connect needs. Every third-party import across all modules —
+# numpy, scipy, matplotlib, opencv-python, pyrealsense2, pyserial, torch,
+# torchvision, networkx, cyclonedds, unitree_sdk2py — is already pinned
+# in the factory env. The delta is EMPTY.
+#
+# This file is intentionally empty but kept in place so:
+#   - install.sh can `pip install -r requirements.txt` unconditionally
+#     and remain idempotent if dependencies shift in the future,
+#   - adding a new third-party import to any module becomes
+#     a one-line change here rather than a script edit.
+#
+# Methodology used for the audit:
+#   1. rg '^(import|from)\s+(\w+)' robotics-connect/**/*.py
+#   2. filter to third-party (exclude stdlib + internal sibling modules)
+#   3. compare against `pip list --format=freeze` from the robot's
+#      `unitree_deploy` env at /home/unitree/miniconda3/envs/unitree_deploy/.
+#
+# If you add a new pip dependency to any module, add it here.

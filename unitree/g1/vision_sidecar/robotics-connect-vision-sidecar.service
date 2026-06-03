@@ -1,0 +1,36 @@
+[Unit]
+Description=Robotics Connect vision sidecar (GPU DINOv2 encoder)
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# Always start from a known-good state: remove any stale container with
+# the same name before `docker run`. --rm handles the clean-exit case,
+# this handles the "systemd restart after a crash that left a container
+# around" case.
+ExecStartPre=-/usr/bin/docker rm -f robotics-connect-vision-sidecar
+#
+# NOTE: we intentionally do NOT mount the host's ~/.cache/torch into the
+# container. The DINOv2 weights are baked into the image at build time
+# (see Dockerfile) and the cache path is pinned to a specific
+# commit ref via DINOV2_REF. Mounting the host cache would shadow the
+# baked layer and, if the host copy were missing or stale, the sidecar
+# would silently fetch `main` from GitHub and crash on PEP 604 syntax.
+ExecStart=/usr/bin/docker run --rm \
+    --runtime=nvidia \
+    --net=host \
+    --name robotics-connect-vision-sidecar \
+    -e PYTHONUNBUFFERED=1 \
+    robotics-connect/vision-sidecar:0.1
+
+ExecStop=/usr/bin/docker stop --time=10 robotics-connect-vision-sidecar
+
+[Install]
+WantedBy=multi-user.target
