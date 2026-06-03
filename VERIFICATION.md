@@ -45,6 +45,12 @@ Key gotchas captured there:
 
 ## Environment
 
+![G1 EDU test environment](unitree/g1/images/environment_overview.jpg)
+
+*G1 EDU on a gantry harness facing the artist's-palette table (water bottle +
+blue balance ball) in a home office. The glass french doors behind explain the
+LiDAR mid/far through-glass returns.*
+
 - Robot: `unitree@192.168.123.164` — G1 EDU, aarch64, `5.10.x-tegra`.
 - Factory `unitree_deploy` conda env present; `robotics-connect` env cloned from it.
 - Depth via librealsense (`/home/unitree/librealsense/build`); RGB via Unitree

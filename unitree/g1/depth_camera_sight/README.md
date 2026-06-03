@@ -395,6 +395,11 @@ demo generation.
 Captured live on a G1 EDU during robotics-connect verification. The head
 camera is angled downward, so it frames the near floor + table.
 
+The actual scene the camera frames — the blue ball and water bottle on the
+artist's-palette table, robot facing it:
+
+![Palette-table close-up](images/scene_table_closeup.jpg)
+
 | RGB — Unitree VideoClient/DDS, 1920×1080 | Depth — RealSense D435i, 640×480, turbo-coloured |
 |---|---|
 | ![RGB sample](images/rgb_sample.jpg) | ![Depth sample](images/depth_sample.jpg) |

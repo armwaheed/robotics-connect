@@ -471,6 +471,15 @@ Two views of the same close cluster (~0.1–0.6 m forward, just below head
 height). The bottle reads as a tall, narrow return (z up to ~0.26 m); the ball
 as a rounded profile beside it (~0.2 m to the robot's right).
 
+The actual scene — the robot reaching toward the palette table with the bottle +
+ball, top-down (≈ x-y) and from the side (≈ x-z):
+
+| Real scene, top-down | Real scene, side |
+|---|---|
+| ![scene top-down](images/scene_topdown.jpg) | ![scene side](images/scene_side.jpg) |
+
+And the LiDAR's own view of those same objects:
+
 | Top (x-y) | Side (x-z) |
 |---|---|
 | ![LiDAR near-field top](images/lidar_near_xy.jpg) | ![LiDAR near-field side](images/lidar_near_xz.jpg) |

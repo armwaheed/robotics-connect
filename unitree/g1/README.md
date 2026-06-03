@@ -6,6 +6,25 @@ capability is a self-contained module with its own README; this page is the
 walkthrough — what's here, how to install/uninstall it, and where to go to
 try each piece on the robot.
 
+## The test environment
+
+These docs were verified on a real G1 EDU in a home-office workspace — knowing
+the scene makes the sensor captures throughout this stack much easier to read.
+
+![G1 EDU on a gantry harness facing the palette table](images/environment_overview.jpg)
+
+The robot stands in a **gantry harness** (the straps over its head) facing a
+small **artist's-palette table** holding a **water bottle** and a **blue balance
+ball** — the recurring objects in the depth-camera and LiDAR captures. Behind it:
+a digital piano, a printer cabinet, and a pair of **glass french doors** (~2 m
+forward, 45° to the right). Those doors are why the LiDAR mid/far scan shows
+beams punching through to the outside.
+
+![Over-the-crown view of the workspace](images/robot_sensor_perspective.jpg)
+
+Over the robot's **crown** — the black dome is the Livox MID-360 LiDAR mount —
+past both arms toward the workspace.
+
 ## What's included
 
 | Capability | Module | Where to start |
