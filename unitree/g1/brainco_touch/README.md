@@ -116,6 +116,11 @@ f2=middle, f3=ring, f4=pinky`.
 - `left_touch_force` / `right_touch_force` — 5 raw `uint16` normal forces.
 - `left_touch_raw` / `right_touch_raw` — full 30-register dump for
   debugging and future fields (tangential direction, proximity).
+- `left_proximity` / `right_proximity` — 5 `uint16` per-finger self-proximity
+  values (thumb, index, middle, ring, pinky), decoded from
+  `touch_raw[16 + 2·i]` (only the second register of each pair carries the
+  signal). ~0 at rest, climbing toward ~65535 as an object nears the
+  fingertip. Verified on-robot 2026-06-03 across all 10 fingertips.
 - `left_touch_ok` / `right_touch_ok` — `True` if the enable write
   succeeded and the bridge is publishing real sensor data rather than
   the position-lag fallback.

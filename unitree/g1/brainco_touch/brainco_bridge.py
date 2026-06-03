@@ -84,6 +84,8 @@ Protocol: newline-delimited JSON over TCP on 127.0.0.1:9877
          "right_touch_force": [5 ints, u16],
          "left_touch_raw":  [30 ints, u16],   # full register block at addr 4200
          "right_touch_raw": [30 ints, u16],
+         "left_proximity":  [5 ints, u16],    # per-finger self-proximity: ~0 idle, →~65535 near
+         "right_proximity": [5 ints, u16],    # finger order: thumb,index,middle,ring,pinky
          "left_touch60_raw":  [60 ints, u16], # rich per-zone block at addr 4300
          "right_touch60_raw": [60 ints, u16], # used for first-contact servo
          "left_lag":       [6 floats, 0-1],   # commanded - actual position
@@ -428,6 +430,21 @@ class HandReader:
 # TCP bridge server
 # ---------------------------------------------------------------------------
 
+def _proximity_from_touch_raw(raw):
+    """Per-finger self-proximity (u16) extracted from the addr-4200 block.
+
+    The 30-register touch block packs proximity at regs 15..24 as (lo, hi)
+    pairs per finger, but on Revo2Touch firmware only the *second* register
+    of each pair carries the signal: it reads ~0 at rest and climbs toward
+    the u16 ceiling (~65535) as an object nears the fingertip.  Verified
+    on-robot 2026-06-03 across all 10 fingertips (idle 0, near-saturation
+    on approach).  Finger order: thumb, index, middle, ring, pinky.
+    """
+    if not raw or len(raw) < 25:
+        return [0] * 5
+    return [int(raw[16 + 2 * i]) for i in range(5)]
+
+
 def _handle_client(conn, left, right):
     buf = ""
     try:
@@ -456,6 +473,8 @@ def _handle_client(conn, left, right):
                         "right_touch_force": rf,
                         "left_touch_raw": lraw,
                         "right_touch_raw": rraw,
+                        "left_proximity": _proximity_from_touch_raw(lraw),
+                        "right_proximity": _proximity_from_touch_raw(rraw),
                         "left_touch60_raw": lraw60,
                         "right_touch60_raw": rraw60,
                         "left_touch_ok": lok,
