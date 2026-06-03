@@ -457,3 +457,31 @@ home/office scene with ≥ 0.60 m gaps, use the 0.22 m default.
 | `lidar_sight.py` | Module source: `LidarSight` + `MockLidarSight` + geometry primitives |
 | `_diag_scene.py` | On-robot scene probe (used during bring-up) |
 | `README.md` | This file |
+
+## Sample capture (on-robot, 2026-06-03)
+
+Captured live on a G1 EDU during robotics-connect verification. The MID-360 is
+crown-mounted and **180° roll-corrected** in software (see the mount-correction
+section above), so all coordinates are body frame (+x forward, +y left, +z up),
+robot base at the `+`.
+
+### Near field — the bottle + ball on the table directly ahead
+
+Two views of the same close cluster (~0.1–0.6 m forward, just below head
+height). The bottle reads as a tall, narrow return (z up to ~0.26 m); the ball
+as a rounded profile beside it (~0.2 m to the robot's right).
+
+| Top (x-y) | Side (x-z) |
+|---|---|
+| ![LiDAR near-field top](images/lidar_near_xy.jpg) | ![LiDAR near-field side](images/lidar_near_xz.jpg) |
+
+### Mid/far field — room walls
+
+![LiDAR mid/far walls](images/lidar_midfar.jpg)
+
+`r ≥ 2.5 m`, cropped to the room walls (the L-shaped wall ~2–3.5 m ahead). The
+robot also sees ~2 m forward / 45° right **through a pair of glass french
+doors**; those through-glass returns (out to ~11 m) are excluded here.
+
+Floor estimated at **−1.24 m**; in the wider scan a 1.42 m² table was detected
+~2 m ahead at confidence 1.00.

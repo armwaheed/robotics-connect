@@ -389,3 +389,16 @@ demo generation.
    That is by design — see the Architecture section. If you try to
    index into `rgb` with depth pixels, you will get garbage. Use the
    right intrinsics dict for the right stream.
+
+## Sample capture (on-robot, 2026-06-03)
+
+Captured live on a G1 EDU during robotics-connect verification. The head
+camera is angled downward, so it frames the near floor + table.
+
+| RGB — Unitree VideoClient/DDS, 1920×1080 | Depth — RealSense D435i, 640×480, turbo-coloured |
+|---|---|
+| ![RGB sample](images/rgb_sample.jpg) | ![Depth sample](images/depth_sample.jpg) |
+
+Depth is colorized near→far (blue→red); valid range **0.40–5.77 m**, ~96% valid
+pixels (black = no-return). Same scene in both: a table with a bottle and a
+balance ball on carpet.

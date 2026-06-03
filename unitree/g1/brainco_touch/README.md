@@ -160,3 +160,72 @@ s.sendall(b'{\"cmd\":\"get\"}\n')
 print(json.loads(s.makefile().readline())['left_touch_force'])
 "
 ```
+
+## On-robot verification & mappings (2026-06-03)
+
+Verified live on a Unitree G1 EDU with Brainco Revo2 **Touch** hands. Every
+mapping below was confirmed on real hardware during robotics-connect bring-up.
+
+### USB port mapping (hand connectivity)
+
+Both hands are FTDI USB-serial dongles that, on this robot, enumerate as
+channels of a **single FTDI quad chip** — so VID/PID **and serial are
+identical across all four ports** and cannot identify a hand. The only
+reliable identification is a **Modbus probe** (left hand answers slave
+`0x7e`, right hand `0x7f`). **Port assignment can drift across robots and
+reboots — always probe, never hard-assume.**
+
+| Port | Device | VID:PID | Serial | Role (this robot) |
+|---|---|---|---|---|
+| `/dev/ttyUSB0` | FTDI quad ch A | `0403:6011` | `FTB3GNPM` | not a hand (no `0x7e`/`0x7f`) |
+| `/dev/ttyUSB1` | FTDI quad ch B | `0403:6011` | `FTB3GNPM` | **Left hand** — Modbus slave `0x7e` |
+| `/dev/ttyUSB2` | FTDI quad ch C | `0403:6011` | `FTB3GNPM` | **Right hand** — Modbus slave `0x7f` |
+| `/dev/ttyUSB3` | FTDI quad ch D | `0403:6011` | `FTB3GNPM` | not a hand (no `0x7e`/`0x7f`) |
+
+Bridge defaults: `DEFAULT_PORT_L=/dev/ttyUSB1`, `DEFAULT_PORT_R=/dev/ttyUSB2`, baud `460800`.
+
+### Digit (motor) mapping — `set` command, `[6 floats, 0..1]`
+
+| idx | motor | `0.0` | `1.0` |
+|---|---|---|---|
+| 0 | thumb_curl | open | closed |
+| 1 | thumb_aux | slap (thumb abducted from palm) | claw (thumb opposed across palm) |
+| 2 | index | open | closed |
+| 3 | middle | open | closed |
+| 4 | ring | open | closed |
+| 5 | pinky | open | closed |
+
+Verified: each digit actuated open↔closed independently on both hands (lateral
+`thumb_aux` confirmed). In a full simultaneous fist the thumb/index stall at
+~0.5–0.7 from finger collision (expected); each digit individually reaches 1.0.
+
+### Touch-sensor mapping — `left_touch_force` / `right_touch_force`, `[5 ints, u16]`
+
+Five fingertip normal-force channels (Modbus reg 4200). **Palms have no touch
+sensor.** Idle ≈ 0, firm press saturates ≈ 2500.
+
+| idx | fingertip | idle | firm press | measured peak (L · R) |
+|---|---|---|---|---|
+| 0 | thumb | ~0 | ~2500 | 1705 · 2500 |
+| 1 | index | ~0 | ~2500 | 2500 · 2500 |
+| 2 | middle | ~0 | ~2500 | 2500 · 2500 |
+| 3 | ring | ~0 | ~2500 | 2500 · 2387 |
+| 4 | pinky | ~0 | ~2500 | 2500 · 2500 |
+
+10/10 fingertips registered clean single press events.
+
+### Proximity-sensor mapping — `left_proximity` / `right_proximity`, `[5 ints, u16]`
+
+Per-finger self-proximity, decoded from `touch_raw[16 + 2·i]` (only the
+**second** register of each pair carries the signal). Idle ≈ 0, rising toward
+the u16 ceiling (~65535) as an object nears the fingertip.
+
+| idx | fingertip | register | idle | near (measured, L · R) |
+|---|---|---|---|---|
+| 0 | thumb | `touch_raw[16]` | 0 | 63,111 · 62,406 |
+| 1 | index | `touch_raw[18]` | 0 | 57,335 · 63,808 |
+| 2 | middle | `touch_raw[20]` | 0 | 61,643 · 64,967 |
+| 3 | ring | `touch_raw[22]` | 0 | 59,517 · 65,440 |
+| 4 | pinky | `touch_raw[24]` | 0 | 64,959 · 65,218 |
+
+10/10 fingertips responded with a clean baseline-0 → near-saturation deflection.
