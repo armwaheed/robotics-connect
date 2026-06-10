@@ -43,6 +43,29 @@ Key gotchas captured there:
   ~0 idle → ~65535 near), now exposed directly as `left_proximity` /
   `right_proximity`.
 
+## Effector ground truth — DOF, morphology, factory gains (2026-06-09)
+
+Read off the **live G1 EDU** during a `discover-robot` pass, captured into the robot descriptor
+[`skills/discover-robot/descriptors/unitree_g1_edu.json`](skills/discover-robot/descriptors/unitree_g1_edu.json).
+This is the real-to-sim ground truth that the Isaac-staging skills reconcile the 29-DOF sim asset against.
+
+| Fact | Value | Source on the robot |
+|---|---|---|
+| Body DOF | **23** (12 legs + 1 waist + 10 arms) | 23 revolute joints in `g1_description/g1_23dof_mode_10.urdf` |
+| Waist | **yaw only** (no roll/pitch) | URDF + `unitree_sdk2_python` G1JointIndex enum |
+| Arms | **5/side** — shoulder p/r/y, elbow, **wrist_roll only** (no wrist pitch/yaw) | URDF (`g1_arm5` SDK example) |
+| Absent vs. 29-DOF | `waist_roll`, `waist_pitch`, L/R `wrist_pitch`, L/R `wrist_yaw` | SDK enum marks all six **"INVALID for g1 23dof"** |
+| Factory PD gains | legs Kp 60/60/60/100/40/40, waist Kp 60/40/40, arms Kp 40 (Kd legs 1/1/1/2/1/1, arms 1) | `unitree_sdk2_python/example/g1/low_level/g1_low_level_example.py` |
+| Head camera tilt | **51.29° down** (floor-plane SVD) | `CAMERA_TILT_DEG_DEFAULT` on-disk |
+| Hands | **Brainco** 5-finger (6 motors), over the FTDI **FT4232H** quad | USB (`lsusb`) + `brainco_touch` |
+| Sensors on USB | Intel RealSense D435i (`8086:0b3a`) | USB |
+
+> **Real vs. sim.** The physical EDU is **23-DOF with Brainco hands**; the Isaac G1 asset is **29-DOF
+> with Inspire hands**. The descriptor records both and locks the 6 absent sim joints so a trained policy
+> is transfer-valid. The full **29-DOF** G1 (the common research config) is the clean case where nothing
+> is locked — see [`unitree_g1_29dof.json`](skills/discover-robot/descriptors/unitree_g1_29dof.json). The
+> 23-DOF EDU is one (reduced) variant, **not** the paradigm.
+
 ## Environment
 
 ![G1 EDU test environment](unitree/g1/images/environment_overview.jpg)

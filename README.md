@@ -1,38 +1,70 @@
 # robotics-connect
 
-A toolkit of robot control stacks for use with **Arm AI Fabric**. Code is
-organised by robot **manufacturer** and **product**, so each robot's control
-and perception stack is self-contained and independently deployable.
+**Agent skills that take a humanoid from plugged-in on the bench → to a sim-to-real-valid Isaac Sim RL
+training job on a DGX Spark — and onboard a robot the agent has never seen before.**
+
+robotics-connect is a collection of [Claude Code **Agent Skills**](skills/README.md) plus the
+verified-on-hardware control stacks they wrap. An AI agent uses it to **discover and control** a robot,
+**characterize its real sensor + effector envelope** into a machine-readable descriptor, and **stage a
+sensor-calibrated, free-base Isaac Lab RL job** from that descriptor — then deploy the trained policy
+back out into a control loop. The same flow generalizes to a new humanoid by re-running the skills.
+
+## The real-to-sim thesis
+
+Isaac Sim does **not** fully expose a real robot's sensor + effector envelope. The sensors are tilted,
+range-limited, and occluded by the robot's own body in ways the sim won't tell you; the real degrees of
+freedom, gains, and hand morphology differ from whatever asset you downloaded. robotics-connect
+**characterizes those on the hardware**, and that characterization is **calibration data an agent builds
+the sim from** — so a sim-trained policy/detector transfers, and the RL training cycles are spent on a
+sim that already matches the robot. robotics-connect is the **real-to-sim** half that feeds sim-to-real.
+
+The artifact at the center of that loop is the **[robot descriptor](skills/discover-robot/schema/robot_descriptor.schema.json)**:
+a single machine-readable card describing the *real* robot — its actual DOF + joint order, PD gains,
+sensor mounts/tilts/blind-spots, hand morphology, and **how it reconciles with the sim asset** (which
+sim DOFs the real robot lacks). Every Isaac-staging skill consumes it.
 
 ## Layout
 
 ```
 robotics-connect/
-└── unitree/                      # manufacturer
-    └── g1/                       # product — Unitree G1 EDU humanoid
-        ├── arm_fk/               # pure-numpy URDF forward kinematics for the arms
-        ├── brainco_touch/        # Brainco Revo2 Touch hand bridge (Modbus → TCP JSON)
-        ├── depth_camera_sight/   # Intel RealSense depth-camera perception
-        ├── lidar_sight/          # LiDAR perception + scene mapping
-        ├── vision_sidecar/       # containerised GPU (DINOv2) inference sidecar
-        ├── install/              # on-robot deploy / uninstall / offline bundle
-        ├── configure_*.sh        # host ↔ robot network configuration
-        └── cyclonedds.xml        # DDS unicast config
+├── .claude-plugin/              # the plugin + marketplace manifests (install as a Claude Code plugin)
+├── skills/                      # robot-AGNOSTIC skills (discovery + Isaac staging + Spark setup)
+│   ├── discover-robot/          #   keystone: emit the real-to-sim robot descriptor
+│   ├── stage-isaac-sensors/     #   sim sensors with the real blind spots
+│   ├── stage-isaac-freebase/    #   free-base USD + deploy gains + DOF reconciliation
+│   ├── stage-isaac-rl-env/      #   the whole-body reach RL env template
+│   ├── deploy-policy/           #   run the trained policy out of the RL env
+│   └── setup-dgx-spark/         #   Isaac Sim + Isaac Lab on a DGX Spark (GB10, aarch64)
+├── unitree/                     # manufacturer
+│   └── g1/                      # product — Unitree G1 EDU (robot-SCOPED capability skills + code)
+│       ├── depth_camera_sight/  #   head RealSense depth + RGB (each dir has SKILL.md + README + code)
+│       ├── lidar_sight/         #   crown Livox MID-360 perception
+│       ├── arm_fk/              #   pure-numpy URDF forward kinematics
+│       ├── brainco_touch/       #   Brainco 5-finger hands (digits, touch, proximity)
+│       ├── vision_sidecar/      #   containerized GPU (DINOv2) inference sidecar
+│       ├── install/             #   on-robot deploy / uninstall / offline bundle
+│       └── connect/             #   host ↔ robot networking (configure_*.sh + CycloneDDS)
+└── assets/media/                # validation media — the "what good looks like" reference standards
 ```
 
-See [`unitree/g1/README.md`](unitree/g1/README.md) for the Unitree G1 EDU
-control stack.
+Robot-scoped skills stay co-located with the verified-on-hardware code (keeping the manufacturer/product
+layout); robot-agnostic skills are flat under `skills/`. Both are registered in
+[`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), so an agent discovers them uniformly.
+Start at the **[skills catalog](skills/README.md)**.
 
 ## Verified on hardware
 
-The `unitree/g1` stack has been brought up and verified **live on a real
-Unitree G1 EDU** — install, depth/RGB/LiDAR, arm forward kinematics, and the
-Brainco hands (digits, touch, proximity). See **[`VERIFICATION.md`](VERIFICATION.md)**
-for the full scoreboard, on-robot sensor captures, and the hand/USB mapping
-tables.
+The `unitree/g1` stack has been brought up and verified **live on a real Unitree G1 EDU** — install,
+depth/RGB/LiDAR, arm forward kinematics, and the Brainco hands. The robot's **23-DOF body**, **yaw-only
+waist**, **roll-only wrists**, **factory PD gains**, and **sensor envelope** were read off the live robot
+into [`skills/discover-robot/descriptors/unitree_g1_edu.json`](skills/discover-robot/descriptors/unitree_g1_edu.json).
+See **[`VERIFICATION.md`](VERIFICATION.md)** for the full scoreboard, the on-hardware ground truth, and
+the hand/USB mapping tables.
 
 ## Adding a robot
 
-Create a `<manufacturer>/<product>/` directory and place that robot's
-control stack inside it, following the same self-contained, module-per-
-capability convention as `unitree/g1/`.
+Run [`discover-robot`](skills/discover-robot/SKILL.md) to produce a new descriptor; the Isaac-staging
+skills consume it unchanged. Robot-scoped capability code goes in a new `<manufacturer>/<product>/`
+directory, module-per-capability like `unitree/g1/`. See
+[`skills/discover-robot/references/onboarding-new-humanoid.md`](skills/discover-robot/references/onboarding-new-humanoid.md)
+for the generalization seams (worked for the Unitree H2 Plus and Boston Dynamics Atlas).

@@ -1,0 +1,28 @@
+{
+    "name": "robotics-connect",
+    "owner": {
+        "name": "Arm AI Fabric",
+        "url": "https://github.com/armwaheed/robotics-connect"
+    },
+    "metadata": {
+        "description": "Robotics Connect — agent skills that take a humanoid from plugged-in-on-the-bench to a sim-to-real-valid Isaac Sim RL training job on a DGX Spark, and onboard a robot the agent has never seen before.",
+        "version": "0.1.0"
+    },
+    "plugins": [
+        {
+            "name": "robotics-connect",
+            "source": "./",
+            "description": "Discover and control a humanoid on the bench, characterize its real sensor + effector envelope into a machine-readable robot descriptor (the real-to-sim calibration card), and stage a sensor-calibrated, free-base Isaac Lab RL job from that descriptor — generalizable to new humanoids. Verified on a Unitree G1 EDU.",
+            "keywords": [
+                "robotics",
+                "humanoid",
+                "isaac-sim",
+                "isaac-lab",
+                "reinforcement-learning",
+                "sim-to-real",
+                "unitree-g1",
+                "dgx-spark"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,220 @@
+{
+    "schema_version": "1.0",
+    "manufacturer": "Unitree",
+    "product": "G1 EDU",
+    "variant": "23dof (arm5, waist-yaw-only, rubber/Brainco hands)",
+    "verified_on_hardware": true,
+    "asset_sources": {
+        "urdf_uri": "g1_description/g1_23dof_mode_10.urdf (on-robot) — actuated joints match the live SDK; the 29-DOF g1_29dof_*.urdf is the kinematic superset",
+        "usd_uri": "ISAACLAB_NUCLEUS_DIR/Robots/Unitree/G1/g1_29dof_inspire_hand.usd (sim asset — see sim_asset)",
+        "notes": "The real robot is a 23-DOF G1 EDU. unitree_ros / g1_description ships both the 23-DOF and 29-DOF descriptions; this descriptor records the 23-DOF as-built robot."
+    },
+    "effectors": {
+        "dof": 23,
+        "joint_order": [
+            "left_hip_pitch_joint",
+            "left_hip_roll_joint",
+            "left_hip_yaw_joint",
+            "left_knee_joint",
+            "left_ankle_pitch_joint",
+            "left_ankle_roll_joint",
+            "right_hip_pitch_joint",
+            "right_hip_roll_joint",
+            "right_hip_yaw_joint",
+            "right_knee_joint",
+            "right_ankle_pitch_joint",
+            "right_ankle_roll_joint",
+            "waist_yaw_joint",
+            "left_shoulder_pitch_joint",
+            "left_shoulder_roll_joint",
+            "left_shoulder_yaw_joint",
+            "left_elbow_joint",
+            "left_wrist_roll_joint",
+            "right_shoulder_pitch_joint",
+            "right_shoulder_roll_joint",
+            "right_shoulder_yaw_joint",
+            "right_elbow_joint",
+            "right_wrist_roll_joint"
+        ],
+        "morphology": [
+            {
+                "segment": "left_leg",
+                "present_joints": ["left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint", "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint"]
+            },
+            {
+                "segment": "right_leg",
+                "present_joints": ["right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint", "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint"]
+            },
+            {
+                "segment": "waist",
+                "present_joints": ["waist_yaw_joint"],
+                "absent_joints": ["waist_roll_joint", "waist_pitch_joint"]
+            },
+            {
+                "segment": "left_arm",
+                "present_joints": ["left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint"],
+                "absent_joints": ["left_wrist_pitch_joint", "left_wrist_yaw_joint"]
+            },
+            {
+                "segment": "right_arm",
+                "present_joints": ["right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"],
+                "absent_joints": ["right_wrist_pitch_joint", "right_wrist_yaw_joint"]
+            }
+        ],
+        "pd_gains": [
+            {"joints": ".*_hip_.*_joint", "stiffness": 60.0, "damping": 1.0},
+            {"joints": ".*_knee_joint", "stiffness": 100.0, "damping": 2.0},
+            {"joints": ".*_ankle_.*_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": "waist_yaw_joint", "stiffness": 60.0, "damping": 1.0},
+            {"joints": ".*_shoulder_.*_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": ".*_elbow_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": ".*_wrist_roll_joint", "stiffness": 40.0, "damping": 1.0}
+        ],
+        "default_pose": {
+            ".*_hip_pitch_joint": -0.10,
+            ".*_knee_joint": 0.30,
+            ".*_ankle_pitch_joint": -0.20,
+            "waist_yaw_joint": 0.0,
+            "left_shoulder_pitch_joint": 0.30,
+            "right_shoulder_pitch_joint": 0.30,
+            "left_shoulder_roll_joint": 0.25,
+            "right_shoulder_roll_joint": -0.25,
+            "left_elbow_joint": 0.97,
+            "right_elbow_joint": 0.97,
+            "left_wrist_roll_joint": 0.15,
+            "right_wrist_roll_joint": -0.15
+        },
+        "ee_links": {
+            "left": "left_wrist_roll_link",
+            "right": "right_wrist_roll_link",
+            "notes": "On the 23-DOF arm the distal ACTUATED link is the forearm (wrist_roll); there is no wrist_pitch/wrist_yaw. The palm is a fixed offset from this link, so arm_fk reports a correct palm XYZ. The sim 29-DOF asset's EE convention is *_wrist_yaw_link (see sim_asset)."
+        }
+    },
+    "hands": {
+        "model": "Brainco Revo2 (rubber 5-finger)",
+        "fingers": 5,
+        "dof": 6,
+        "control": "Modbus over a single FTDI FT4232H quad USB-UART -> TCP JSON bridge (see unitree/g1/brainco_touch). Left hand Modbus 0x7e, right 0x7f; port assignment drifts, always probe.",
+        "tactile": true
+    },
+    "sensors": [
+        {
+            "name": "head_depth",
+            "type": "depth_camera",
+            "model": "Intel RealSense D435i",
+            "mount_link": "torso_link",
+            "pose": {
+                "xyz_m": [0.06, 0.0, 0.45],
+                "tilt_deg": 51.29
+            },
+            "fov": {
+                "vertical_deg": [-29, 29],
+                "horizontal_deg": [-43, 43]
+            },
+            "calibration": {
+                "method": "floor-plane SVD fit (depth_camera_sight/_calibrate_tilt.py)",
+                "date": "2026-04-13",
+                "notes": "Tilt 51.29 deg DOWN, mount height ~1.242 m, 0.83 cm RMS over ~18k floor pixels. At this pitch the camera sees the floor + near surface, NOT the room (a mattress edge is still resolvable 2-3 m out in the upper frame). This single number sets the sim CameraCfg pitch — measured, not guessed. Re-measure per robot.",
+                "reference_media": ["unitree/g1/depth_camera_sight/images/rgb_sample.jpg", "unitree/g1/depth_camera_sight/images/depth_sample.jpg"]
+            }
+        },
+        {
+            "name": "head_rgb",
+            "type": "camera",
+            "model": "Unitree head RGB (VideoClient over DDS)",
+            "mount_link": "torso_link",
+            "pose": {
+                "xyz_m": [0.06, 0.01, 0.45]
+            },
+            "calibration": {
+                "notes": "1920x1080 over the Unitree video hub (DDS). Mounted ~1 cm left of the depth module; NOT pixel-aligned with depth. Feeds the DINOv2 vision sidecar."
+            }
+        },
+        {
+            "name": "crown_lidar",
+            "type": "lidar",
+            "model": "Livox MID-360",
+            "mount_link": "torso_link",
+            "pose": {
+                "xyz_m": [0.0003, 0.0, 0.416],
+                "tilt_deg": 2.3,
+                "roll_correction_deg": 180.0
+            },
+            "fov": {
+                "vertical_deg": [-45, 52],
+                "horizontal_deg": [-180, 180]
+            },
+            "occlusions": [
+                {
+                    "kind": "azimuth_band",
+                    "range_deg": [40, 45],
+                    "description": "Face-frame vertical bars blank ±40-45 deg forward azimuth — 0 points in those sectors."
+                },
+                {
+                    "kind": "elevation_floor",
+                    "range_deg": [-90, -10],
+                    "description": "Lower jaw / chin blanks everything below -10 deg elevation, hiding the far floor (a near surface at ~-7 deg is still seen)."
+                },
+                {
+                    "kind": "self_reflection",
+                    "range_m": [0.0, 0.15],
+                    "description": "Dome housing self-returns cluster at the sensor origin; dropped inside a 0.15 m radius."
+                }
+            ],
+            "calibration": {
+                "method": "table-top z-sign + side-object y-sign probes on hardware (lidar_sight)",
+                "date": "2026-04-17",
+                "notes": "The MID-360 is physically mounted UPSIDE DOWN in the crown; a +180 deg roll correction recovers clean +x-forward/+y-left/+z-up body frame. LiDAR-derived torso height (0.804 m) agrees with the camera's tape+SVD (0.812 m) to 0.8 cm. Detect a bed via find_tables: height-band filter + dominant horizontal plane + planar-area threshold.",
+                "reference_media": ["unitree/g1/lidar_sight/images/scene_side.jpg", "unitree/g1/lidar_sight/images/lidar_near_xz.jpg", "unitree/g1/lidar_sight/images/lidar_midfar.jpg"]
+            }
+        }
+    ],
+    "walk_policy": {
+        "source": "unitree_rl_lab velocity-walk (exported ONNX, Isaac-Lab-native); run as a torch MLP on GPU (no onnxruntime GPU on aarch64). See deploy-policy + locomotion.",
+        "obs_spec": "480-D = 5-step term-major history of [base_ang_vel*0.2 (3), projected_gravity (3), velocity_commands (3), joint_pos_rel (29), joint_vel_rel*0.05 (29), last_action (29)].",
+        "action_spec": "raw*0.25 + default_joint_pos, applied to the 29 body joints in Isaac articulation order. On the 23-DOF robot the 6 absent motor slots are no-ops (see sim_real_reconciliation.locked_sim_joints).",
+        "command_ranges": "vx[-0.5,1.0] vy[-0.3,0.3] wz[-0.2,0.2] m/s, 50 Hz."
+    },
+    "sim_asset": {
+        "usd_uri": "ISAACLAB_NUCLEUS_DIR/Robots/Unitree/G1/g1_29dof_inspire_hand.usd",
+        "dof": 29,
+        "hand": "Inspire FTP (5-finger)",
+        "joint_order": [
+            "left_hip_pitch_joint", "right_hip_pitch_joint", "waist_yaw_joint",
+            "left_hip_roll_joint", "right_hip_roll_joint", "waist_roll_joint",
+            "left_hip_yaw_joint", "right_hip_yaw_joint", "waist_pitch_joint",
+            "left_knee_joint", "right_knee_joint",
+            "left_shoulder_pitch_joint", "right_shoulder_pitch_joint",
+            "left_ankle_pitch_joint", "right_ankle_pitch_joint",
+            "left_shoulder_roll_joint", "right_shoulder_roll_joint",
+            "left_ankle_roll_joint", "right_ankle_roll_joint",
+            "left_shoulder_yaw_joint", "right_shoulder_yaw_joint",
+            "left_elbow_joint", "right_elbow_joint",
+            "left_wrist_roll_joint", "right_wrist_roll_joint",
+            "left_wrist_pitch_joint", "right_wrist_pitch_joint",
+            "left_wrist_yaw_joint", "right_wrist_yaw_joint"
+        ],
+        "sim_real_reconciliation": {
+            "locked_sim_joints": [
+                "waist_roll_joint",
+                "waist_pitch_joint",
+                "left_wrist_pitch_joint",
+                "left_wrist_yaw_joint",
+                "right_wrist_pitch_joint",
+                "right_wrist_yaw_joint"
+            ],
+            "hand_substitution": {
+                "real": "Brainco Revo2 (5-finger, 6 motors)",
+                "sim": "Inspire FTP (5-finger)",
+                "rationale": "Match FINGER COUNT, not brand: a 5-finger sim hand preserves the grasp morphology of the real Brainco hand. The Isaac G1 default Dex3 (3-finger) was rejected for this reason. The fingers are held at their default during a reach in either case — the body policy controls only the 23/29 body joints, never the fingers — so the Brainco↔Inspire difference does not enter the trained policy."
+            },
+            "notes": "These 6 sim joints exist in the 29-DOF asset but are ABSENT on this 23-DOF robot — the Unitree SDK enum marks them 'INVALID for g1 23dof' (WaistRoll/WaistPitch and L/R WristPitch/WristYaw). For a transfer-valid policy, lock them at default and EXCLUDE them from the action set so the policy reaches/balances using only the 12 legs + waist_yaw + 10 arm joints the hardware actually has. CAVEAT: the issue#2 bed-reach policy was trained on the FULL 29-DOF (it leans using waist pitch the 23-DOF robot lacks), so it is a valid SIM result but NOT directly transfer-valid to this robot — retrain with these joints locked for hardware transfer."
+        }
+    },
+    "provenance": {
+        "characterized_date": "2026-06-09",
+        "characterized_by": "discover-robot (Claude Code), over SSH to the live G1 EDU; effector DOF read from g1_23dof_mode_10.urdf + the unitree_sdk2_python G1JointIndex enum; sensors from the robotics-connect *_sight on-hardware calibrations.",
+        "skills_used": ["discover-robot", "unitree/g1/depth_camera_sight", "unitree/g1/lidar_sight", "unitree/g1/arm_fk", "unitree/g1/brainco_touch"],
+        "notes": "HARDWARE-SOURCED on the live robot: the 23-DOF body + joint set (23 revolute joints in g1_23dof_mode_10.urdf), the waist being yaw-only and the wrists roll-only (the SDK enum marks the other 6 'INVALID for g1 23dof'), the camera down-tilt constant (CAMERA_TILT_DEG_DEFAULT=51.29 on-disk), the sensors/hand on USB (RealSense D435i + Brainco-via-FT4232H quad), and the 'pd_gains' = the FACTORY Kp/Kd that ship with the robot, read from unitree_sdk2_python/example/g1/low_level/g1_low_level_example.py (legs Kp 60/60/60/100/40/40 Kd 1/1/1/2/1/1; waist Kp 60/40/40; arms Kp 40 Kd 1). NOTE on gains: these factory low-level gains are the position-control deploy gains; the armwaheed/robots#2 whole-body RL balance policy was STAGED with the stiffer unitree_rl_gym walk-policy training gains (hips kp100/knee150/ankle40/waist200/arms40, Kd 2/4/2/5/10) — pick per the deploy controller (factory gains for low-level control, walk-policy gains to match the RL walk). 'default_pose' is the velocity-walk policy's neutral (the walk default the reach policy is centred on). The 29-DOF sim joint_order is the Isaac articulation order used by the velocity-walk deploy."
+    }
+}
