@@ -110,6 +110,49 @@ class DinoV2Model:
             return feat[0].detach().to("cpu").numpy().astype(np.float32)
 
 
+# ── GPU topology + device selection ──────────────────────────────────────────
+
+def gpu_topology() -> dict:
+    """Enumerate the CUDA accelerators visible on THIS compute node.
+
+    A peripheral accelerator on its own node (e.g. a Jetson Thor on the G1's expansion port) is a
+    SEPARATE host, not a `cuda:N` here — discover it via the descriptor's `compute` block and run a
+    sidecar instance on it. This reports only what this node's CUDA runtime sees."""
+    if not torch.cuda.is_available():
+        return {"cuda_available": False, "device_count": 0, "devices": []}
+    devs = []
+    for i in range(torch.cuda.device_count()):
+        p = torch.cuda.get_device_properties(i)
+        devs.append({"index": i, "name": p.name, "memory_gb": round(p.total_memory / (1024 ** 3), 1)})
+    return {"cuda_available": True, "device_count": len(devs), "devices": devs}
+
+
+def _select_device() -> str:
+    """Pick the compute device, honoring `VISION_SIDECAR_DEVICE`.
+
+    Default: `cuda:0` if a CUDA device is available, else `cpu`. Set `VISION_SIDECAR_DEVICE` to target a
+    specific GPU on a multi-GPU node (e.g. `cuda:1`), or `cpu` to force the CPU path. A requested index
+    beyond `device_count` falls back to `cuda:0` with a warning, so a stale descriptor can't wedge the
+    sidecar."""
+    want = os.environ.get("VISION_SIDECAR_DEVICE", "").strip()
+    if not torch.cuda.is_available():
+        if want and want != "cpu":
+            print(f"[vision_sidecar] CUDA unavailable; ignoring VISION_SIDECAR_DEVICE={want!r}, using cpu", flush=True)
+        return "cpu"
+    if not want or want == "cuda":
+        return "cuda:0"
+    if want == "cpu":
+        return "cpu"
+    if want.startswith("cuda:"):
+        idx = int(want.split(":", 1)[1] or 0)
+        n = torch.cuda.device_count()
+        if idx >= n:
+            print(f"[vision_sidecar] requested {want} but only {n} CUDA device(s) present; using cuda:0", flush=True)
+            return "cuda:0"
+        return f"cuda:{idx}"
+    return want
+
+
 # Module singleton — loaded once at process start, shared across requests.
 _MODEL: Optional[DinoV2Model] = None
 _MODEL_LOCK = threading.Lock()
@@ -119,7 +162,7 @@ def _get_model() -> DinoV2Model:
     global _MODEL
     with _MODEL_LOCK:
         if _MODEL is None:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = _select_device()
             _MODEL = DinoV2Model(device=device)
             print(f"[vision_sidecar] DINOv2 ViT-S/14 loaded on {_MODEL.device} "
                   f"in {_MODEL.load_s:.2f}s  torch={torch.__version__}",
@@ -173,12 +216,15 @@ class _Handler(socketserver.BaseRequestHandler):
             cmd = header.get("cmd")
             if cmd == "ping":
                 model = _get_model()
+                topo = gpu_topology()
                 _send_json(sock, {
                     "ok": True,
                     "device": str(model.device),
                     "load_s": round(model.load_s, 3),
                     "torch": torch.__version__,
-                    "cuda_available": bool(torch.cuda.is_available()),
+                    "cuda_available": topo["cuda_available"],
+                    "device_count": topo["device_count"],
+                    "devices": topo["devices"],
                 })
                 return
 
@@ -232,6 +278,12 @@ class _ReusableServer(socketserver.ThreadingTCPServer):
 
 
 def main() -> int:
+    # Discovery mode: print this node's GPU topology as JSON and exit (no server, no model load).
+    # Used by discover-robot to enumerate the node's accelerators into the descriptor's `compute` block.
+    if "--topology" in sys.argv:
+        print(json.dumps(gpu_topology()))
+        return 0
+
     host = os.environ.get("VISION_SIDECAR_HOST", "0.0.0.0")
     port = int(os.environ.get("VISION_SIDECAR_PORT", "9878"))
 

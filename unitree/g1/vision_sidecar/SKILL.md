@@ -4,10 +4,12 @@ description: >-
   Run accelerated GPU vision inference (DINOv2 ViT embeddings) for the Unitree G1 as a containerized
   sidecar over local RPC, so the host unitree_deploy env stays CPU-torch-only. Use when a consumer
   downstream of the G1's camera frames needs GPU-accelerated inference (e.g. DINOv2 features) and you
-  don't want to install GPU torch into the robot's deploy env. Containerized service; pairs with
-  unitree-g1-sense-depth's RGB stream.
+  don't want to install GPU torch into the robot's deploy env. The sidecar is placeable + targetable +
+  device-selectable (VISION_SIDECAR_HOST/PORT/DEVICE) so it coexists on an alternate port, runs one per
+  GPU, or runs on a peripheral expansion-port node (e.g. a Jetson Thor) — composing with the descriptor
+  compute block. Pairs with unitree-g1-sense-depth's RGB stream.
 metadata:
-  tags: [unitree-g1, vision, dinov2, gpu, inference, sidecar, container, embeddings]
+  tags: [unitree-g1, vision, dinov2, gpu, inference, sidecar, container, embeddings, multi-gpu, ports]
 ---
 
 # Unitree G1 — GPU vision sidecar
@@ -29,6 +31,25 @@ the sidecar when they need accelerated inference. Install, the service unit, and
   the robot's deploy env.
 - Pattern: send frames through the sidecar rather than co-locating a heavy model in `unitree_deploy`.
   `--cpu` on a consumer forces the in-process fallback.
+
+## Placement & coexistence (multi-GPU / peripheral / alternate port)
+
+The sidecar is **placeable, targetable, and device-selectable** — the GPU half of the "any humanoid"
+discoverability theme. It composes with the descriptor's
+[`compute`](../../../skills/discover-robot/schema/robot_descriptor.schema.json) block (each accelerator
+node carries a `host` and `device`):
+
+- **Enumerate** a node's accelerators: `docker run --rm --runtime=nvidia robotics-connect/vision-sidecar:0.1 --topology`.
+- **Alternate port (coexistence)** — if `9878` is held by another sidecar/service, **don't fight for it**;
+  run on another port and target it: `-e VISION_SIDECAR_PORT=9879`. (Used live to verify the sidecar on a
+  G1 whose `9878` was occupied.)
+- **One per GPU** on a multi-GPU node: a second instance with `-e VISION_SIDECAR_DEVICE=cuda:1 -e VISION_SIDECAR_PORT=9879`.
+- **Peripheral GPU** (e.g. a Jetson Thor on the expansion port): run the sidecar **on the Thor**, record it
+  as a `compute` node (`location: expansion`, `host: <thor-ip>`); clients target `<thor-ip>:9878`. No code
+  change — only the descriptor's `compute.host` differs.
+
+The host-side client reads the `host:port` to target **from the descriptor's compute block**, so GPU
+placement is data-driven. See [`README.md`](README.md) § *Multiple GPUs, peripheral nodes & port coexistence*.
 
 ## Try it
 

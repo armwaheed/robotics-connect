@@ -156,6 +156,56 @@ print(json.loads(s.recv(n)))
 '
 ```
 
+## Multiple GPUs, peripheral nodes & port coexistence
+
+The sidecar is **placeable, targetable, and device-selectable** via three env vars, so it composes with
+the descriptor's [`compute`](../../../skills/discover-robot/schema/robot_descriptor.schema.json) block —
+the "any humanoid" GPU story (0, 1, or N accelerators, onboard or on an expansion port):
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `VISION_SIDECAR_HOST` | `0.0.0.0` | Bind address. `0.0.0.0` means a client on another node can reach it. |
+| `VISION_SIDECAR_PORT` | `9878` | TCP port. **Run a second instance on a different port to coexist** with another sidecar/service. |
+| `VISION_SIDECAR_DEVICE` | `cuda:0` | Which accelerator to load on. Pin `cuda:1` for a second GPU; `cpu` to force CPU. |
+
+**Enumerate a node's accelerators** (used by `discover-robot`'s `discover_compute.py`):
+
+```bash
+docker run --rm --runtime=nvidia robotics-connect/vision-sidecar:0.1 --topology
+# {"cuda_available": true, "device_count": 1, "devices": [{"index": 0, "name": "Orin", "memory_gb": 15.0}]}
+```
+
+### Port coexistence (alternate port)
+If `9878` is already held — a second sidecar, a co-located service, or (as seen on a dev G1) a private
+build's service — **don't fight for the port; run on another one** and target it explicitly:
+
+```bash
+docker run -d --rm --runtime=nvidia --net=host \
+  -e VISION_SIDECAR_PORT=9879 -e VISION_SIDECAR_DEVICE=cuda:0 \
+  --name vision-9879 robotics-connect/vision-sidecar:0.1
+# client: socket.create_connection((host, 9879))
+```
+
+This was used live to verify the robotics-connect sidecar on a G1 whose `9878` was occupied — the
+sidecar served correctly on `9879` (`device_count` reported, encode verified) without disturbing the
+other service. The host-side client reads the **`host:port` to target from the descriptor's `compute`
+node**, so placement is data-driven, not hard-coded.
+
+### One sidecar per GPU (multi-GPU node)
+On a node with several GPUs, run one instance per GPU on distinct ports, each pinned:
+
+```bash
+docker run -d --rm --runtime=nvidia --net=host -e VISION_SIDECAR_PORT=9878 -e VISION_SIDECAR_DEVICE=cuda:0 robotics-connect/vision-sidecar:0.1
+docker run -d --rm --runtime=nvidia --net=host -e VISION_SIDECAR_PORT=9879 -e VISION_SIDECAR_DEVICE=cuda:1 robotics-connect/vision-sidecar:0.1
+```
+
+### Peripheral / expansion-port GPU (e.g. a Jetson Thor)
+A Jetson Thor on the G1's rear expansion port is a **separate compute node**, not a `cuda:N` on the
+Orin. Run a sidecar **on the Thor** (it binds `0.0.0.0`), record its address as a `compute` node
+(`location: expansion`, `host: <thor-ip>`) in the descriptor, and clients target `<thor-ip>:9878`.
+`discover_compute.py --expansion <thor-ip>` probes it and emits the node (`present: false` when the slot
+is empty). No code change — only the descriptor's `compute.host` differs.
+
 ## Upgrading
 
 Bump `IMAGE_TAG` in `install.sh`, the `FROM` line in `Dockerfile`, the

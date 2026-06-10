@@ -326,6 +326,65 @@
                 }
             }
         },
+        "compute": {
+            "type": "array",
+            "description": "The robot's onboard + peripheral compute / accelerators, discovered on the hardware. The 'any humanoid' theme applies to GPUs too: a robot may have 0, 1, or N accelerators, onboard or on an expansion port (e.g. the Unitree G1's rear port for an NVIDIA Jetson Thor). GPU workloads (the vision sidecar, any sim-side inference) are PLACED and TARGETED from this — run the sidecar on whichever node has the accelerator and point clients at its host. Vendor-neutral.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "node",
+                    "type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "Logical node id, e.g. 'onboard', 'expansion-0'."
+                    },
+                    "location": {
+                        "type": "string",
+                        "enum": ["onboard", "expansion", "offboard"],
+                        "description": "Where the compute physically lives relative to the robot."
+                    },
+                    "host": {
+                        "type": "string",
+                        "description": "Address a sidecar on this node is reachable at from the control host: '127.0.0.1' for onboard, the peripheral's IP for an expansion node."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": ["igpu", "dgpu", "cpu", "npu", "other"],
+                        "description": "Accelerator class: integrated GPU, discrete GPU, CPU, neural accelerator, or other."
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "e.g. 'NVIDIA Jetson Orin NX', 'NVIDIA Jetson Thor'."
+                    },
+                    "device": {
+                        "type": "string",
+                        "description": "Framework device handle on its node, e.g. 'cuda:0'."
+                    },
+                    "memory_gb": {
+                        "type": "number",
+                        "description": "Accelerator-accessible memory in GiB (unified memory on a Jetson)."
+                    },
+                    "framework": {
+                        "type": "string",
+                        "description": "Compute framework, e.g. 'cuda', 'rocm', 'cpu'."
+                    },
+                    "present": {
+                        "type": "boolean",
+                        "description": "Whether this node is currently attached + reachable (an expansion slot may be empty)."
+                    },
+                    "optional": {
+                        "type": "boolean",
+                        "description": "True for an optional/peripheral node that may or may not be installed on a given unit."
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "walk_policy": {
             "type": "object",
             "description": "The deploy obs/action layout of the robot's walking policy — needed to deploy a policy out of the RL env and to set the reach policy's neutral to the walk default.",

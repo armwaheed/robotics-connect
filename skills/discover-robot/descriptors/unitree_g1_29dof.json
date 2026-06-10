@@ -143,6 +143,19 @@
             }
         }
     ],
+    "compute": [
+        {
+            "node": "onboard",
+            "location": "onboard",
+            "host": "127.0.0.1",
+            "type": "igpu",
+            "model": "NVIDIA Jetson Orin (typical G1 onboard)",
+            "device": "cuda:0",
+            "framework": "cuda",
+            "present": true,
+            "notes": "Enumerate per robot with discover_compute.py — the accelerator model, memory, and count vary by unit. A G1 with the rear-port Jetson Thor adds an 'expansion' node (a separate host); discover_compute --expansion <host> probes it."
+        }
+    ],
     "walk_policy": {
         "source": "unitree_rl_lab velocity-walk (exported ONNX); torch MLP on GPU.",
         "obs_spec": "480-D = 5-step term-major history of [base_ang_vel*0.2 (3), projected_gravity (3), velocity_commands (3), joint_pos_rel (29), joint_vel_rel*0.05 (29), last_action (29)].",
