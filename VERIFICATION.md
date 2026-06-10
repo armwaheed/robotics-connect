@@ -119,8 +119,24 @@ been exercised under its own identity on hardware. Verified end-to-end **2026-06
   faster than the ~250 ms in-process CPU fallback.
 
 The image is built fresh from the public Dockerfile (the private build that previously existed on the
-robot is **not** used). The service is now installed + enabled on the robot; `vision_sidecar/uninstall.sh`
+robot is **not** used). The service is installed + enabled on the robot; `vision_sidecar/uninstall.sh`
 removes it.
+
+### GPU discoverability — compute topology + a placeable, device-selectable sidecar ("any humanoid")
+Extended the discoverability theme to **GPUs**: a robot may have 0, 1, or N accelerators, onboard or on
+an expansion port. Verified live **2026-06-10**:
+
+- **Compute discovery** (`skills/discover-robot/scripts/discover_compute.py`) enumerated the **real
+  onboard GPU**: `{node: onboard, type: igpu, model: "Orin", device: cuda:0, memory_gb: 15.0, device_count: 1}`
+  — written into the descriptors' new `compute` block. The **expansion-node probe** (a declared but
+  unattached Jetson Thor) correctly returns `present: false`.
+- **Sidecar is now device-selectable + reports topology.** `ping` returns `device_count` + per-device
+  `name`/`memory_gb`; `VISION_SIDECAR_DEVICE` pins the GPU; `VISION_SIDECAR_PORT`/`HOST` place it.
+  Verified on an alternate port: `ping → device=cuda:0, device_count=1, devices=[Orin 15.0 GB]`, encode → 384 floats.
+- **Port-coexistence pattern** (now part of the skill): a private build's service was auto-grabbing
+  `9878` on boot; the robotics-connect sidecar was verified on `9879` via `VISION_SIDECAR_PORT` without
+  disturbing it. The private `robotube-vision-sidecar.service` was then **disabled** (per operator), and
+  the robotics-connect sidecar now owns `9878` with full topology reporting.
 
 ## Environment
 

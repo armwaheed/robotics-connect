@@ -169,6 +169,31 @@
             }
         }
     ],
+    "compute": [
+        {
+            "node": "onboard",
+            "location": "onboard",
+            "host": "127.0.0.1",
+            "type": "igpu",
+            "model": "NVIDIA Jetson Orin NX",
+            "device": "cuda:0",
+            "memory_gb": 15.0,
+            "framework": "cuda",
+            "present": true,
+            "notes": "Enumerated LIVE on the robot (discover_compute.py via the vision-sidecar CUDA runtime): torch device name 'Orin', device_count=1, 15.0 GiB CUDA-accessible unified memory. Hosts the vision sidecar."
+        },
+        {
+            "node": "expansion-0",
+            "location": "expansion",
+            "host": "",
+            "type": "igpu",
+            "model": "NVIDIA Jetson Thor (optional)",
+            "framework": "cuda",
+            "optional": true,
+            "present": false,
+            "notes": "The G1 has a rear expansion port for an optional Jetson Thor — a SEPARATE compute node (own CPU+GPU+OS), NOT a cuda:N on the Orin. Not attached on this unit (probe returns present=false). When installed, run a vision sidecar on the Thor and set 'host' to its address; clients target host:9878 (the sidecar binds 0.0.0.0 and takes VISION_SIDECAR_HOST/PORT/DEVICE)."
+        }
+    ],
     "walk_policy": {
         "source": "unitree_rl_lab velocity-walk (exported ONNX, Isaac-Lab-native); run as a torch MLP on GPU (no onnxruntime GPU on aarch64). See deploy-policy + locomotion.",
         "obs_spec": "480-D = 5-step term-major history of [base_ang_vel*0.2 (3), projected_gravity (3), velocity_commands (3), joint_pos_rel (29), joint_vel_rel*0.05 (29), last_action (29)].",

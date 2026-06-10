@@ -83,6 +83,21 @@ a face frame, an elevation floor under a chin, self-reflection inside a dome). P
 and `calibration.reference_media` at the on-hardware captures that are the "what a calibrated envelope
 looks like" reference. **These blind spots are robot-specific — measure them per robot.**
 
+### 3b. Discover the compute topology (GPUs — onboard + peripheral)
+The "any humanoid" theme applies to accelerators too: a robot may have 0, 1, or N GPUs, onboard or on an
+expansion port (e.g. the G1's rear port for a Jetson Thor — a **separate compute node**, not a `cuda:N`
+on the SoC). Enumerate them into the descriptor's `compute` block:
+
+```bash
+python scripts/discover_compute.py [--image robotics-connect/vision-sidecar:0.1] [--expansion <peripheral-host>]
+```
+
+It enumerates the onboard accelerator(s) — via local `torch.cuda`, a GPU container's CUDA runtime (a
+Jetson host's torch is usually CPU-only), or `nvidia-smi` — and probes any declared expansion node
+(emitting `present: false` when the slot is empty). GPU workloads (the vision sidecar) are then
+**placed + targeted from `compute`**: run the sidecar on whichever node has the accelerator and point
+clients at its `host:port` (see [`unitree-g1-vision-sidecar`](../../unitree/g1/vision_sidecar/SKILL.md)).
+
 ### 4. Characterize the hands
 Record `hands.model`, `fingers`, `dof`, `control`, `tactile`. Finger COUNT is what matters for picking
 a sim hand (see step 5) — match morphology, not brand.
