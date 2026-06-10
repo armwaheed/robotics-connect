@@ -5,6 +5,12 @@
 # active WiFi connection using NetworkManager's nmcli.
 #
 # VERSION 4: Uses nmcli for a more robust and direct configuration.
+#
+# SCOPE: this is host <-> robot NETWORKING only (so the host can reach the
+# robot's DDS topics). For bringing up the DGX Spark's Isaac Sim + Isaac Lab
+# stack (the GB10/aarch64 gotchas: source build, LD_PRELOAD libgomp, the rsl_rl
+# shim, no onnxruntime-GPU, Fabric render), see the `setup-dgx-spark` skill:
+#   ../../skills/setup-dgx-spark/SKILL.md  (and its scripts/spark_env.sh)
 
 set -e
 set -u

@@ -1,0 +1,24 @@
+{
+    "name": "robotics-connect",
+    "description": "Take a humanoid from plugged-in-on-the-bench to a sim-to-real-valid Isaac Sim RL training job: discover and control the robot, characterize its real sensor + effector envelope into a machine-readable descriptor, then stage a sensor-calibrated, free-base Isaac Lab RL job from it. Robot-scoped capability skills (verified on a Unitree G1 EDU) compose with robot-agnostic discovery, Isaac-staging, and DGX Spark setup skills, so the same flow onboards a humanoid the agent has never seen before.",
+    "version": "0.1.0",
+    "author": {
+        "name": "Arm AI Fabric",
+        "url": "https://github.com/armwaheed/robotics-connect"
+    },
+    "homepage": "https://github.com/armwaheed/robotics-connect",
+    "repository": "https://github.com/armwaheed/robotics-connect",
+    "keywords": [
+        "robotics",
+        "humanoid",
+        "isaac-sim",
+        "isaac-lab",
+        "reinforcement-learning",
+        "sim-to-real",
+        "unitree-g1",
+        "dgx-spark"
+    ],
+    "skills": [
+        "./unitree/g1"
+    ]
+}

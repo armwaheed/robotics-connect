@@ -1,0 +1,442 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/armwaheed/robotics-connect/skills/discover-robot/schema/robot_descriptor.schema.json",
+    "title": "Robot Descriptor",
+    "description": "The real-to-sim calibration card for one humanoid: its real degrees of freedom, gains, sensors, and hand morphology as characterized on the hardware, plus how it reconciles with the Isaac Sim asset. Emitted by the discover-robot skill and consumed by every Isaac-staging skill (stage-isaac-sensors, stage-isaac-freebase, stage-isaac-rl-env, deploy-policy).",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "manufacturer",
+        "product",
+        "effectors",
+        "sensors",
+        "sim_asset"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "description": "Version of this descriptor schema the file targets.",
+            "const": "1.0"
+        },
+        "manufacturer": {
+            "type": "string",
+            "description": "Robot manufacturer, e.g. 'Unitree', 'Boston Dynamics'."
+        },
+        "product": {
+            "type": "string",
+            "description": "Product name, e.g. 'G1 EDU', 'H2 Plus', 'Atlas'."
+        },
+        "variant": {
+            "type": "string",
+            "description": "Hardware variant / configuration, e.g. '23dof'. Two units of the same product can differ; this is the as-built configuration of THIS robot."
+        },
+        "verified_on_hardware": {
+            "type": "boolean",
+            "description": "True when the effector/sensor characterization in this descriptor was measured on the physical robot (not inferred from an asset or spec sheet)."
+        },
+        "asset_sources": {
+            "type": "object",
+            "description": "Where the robot's kinematic/visual assets were acquired.",
+            "additionalProperties": false,
+            "properties": {
+                "urdf_uri": {
+                    "type": "string",
+                    "description": "URI/path to the robot's URDF (vendor SDK, unitree_ros, etc.)."
+                },
+                "usd_uri": {
+                    "type": "string",
+                    "description": "URI/path to the robot's Isaac Sim USD."
+                },
+                "notes": {
+                    "type": "string"
+                }
+            }
+        },
+        "effectors": {
+            "type": "object",
+            "description": "The robot's REAL actuated degrees of freedom, as read from the live SDK on the hardware (NOT the asset's DOF — those can differ; see sim_real_reconciliation).",
+            "required": [
+                "dof",
+                "morphology"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "dof": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Total actuated body DOF on the real robot (excludes hand/finger DOF, which are listed under 'hands')."
+                },
+                "joint_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "The robot's joint names in its deploy/SDK lowstate order. Length should equal dof. This is the order obs/action vectors are indexed in at deploy."
+                },
+                "morphology": {
+                    "type": "array",
+                    "description": "Per-segment breakdown of which joints are present on the real robot. This is where a reduced-DOF variant (e.g. a yaw-only waist, or wristless forearms) is recorded — the seam the sim must be reconciled against.",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "segment",
+                            "present_joints"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                            "segment": {
+                                "type": "string",
+                                "description": "Body segment, e.g. 'left_leg', 'waist', 'right_arm', 'neck'."
+                            },
+                            "present_joints": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Joint names actuated on the real robot for this segment."
+                            },
+                            "absent_joints": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Joints the full/canonical model has for this segment but THIS robot lacks (e.g. waist_roll/waist_pitch on a yaw-only waist). These become locked_sim_joints in the reconciliation."
+                            }
+                        }
+                    }
+                },
+                "pd_gains": {
+                    "type": "array",
+                    "description": "Deploy PD gains per joint group. Extract from the robot's deploy config — the stock manipulation gains are usually far too stiff for a whole-body balance policy.",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "joints",
+                            "stiffness",
+                            "damping"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                            "joints": {
+                                "type": "string",
+                                "description": "Joint-name regex/glob this gain group applies to, e.g. '.*_knee_joint'."
+                            },
+                            "stiffness": {
+                                "type": "number",
+                                "description": "kp"
+                            },
+                            "damping": {
+                                "type": "number",
+                                "description": "kd"
+                            }
+                        }
+                    }
+                },
+                "default_pose": {
+                    "type": "object",
+                    "description": "The neutral standing pose, ideally taken from the robot's own walking-policy default so a reach policy's neutral matches the deploy stance. Map of joint-name (or regex) -> radians.",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
+                "ee_links": {
+                    "type": "object",
+                    "description": "End-effector link names per side. On a reduced-DOF arm the distal ACTUATED link may differ from the canonical wrist link (note it).",
+                    "additionalProperties": false,
+                    "properties": {
+                        "left": {
+                            "type": "string"
+                        },
+                        "right": {
+                            "type": "string"
+                        },
+                        "notes": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "hands": {
+            "type": "object",
+            "description": "Hand / gripper morphology. The MORPHOLOGY (finger count) matters more than the brand for sim transfer — match finger count when picking a sim hand.",
+            "additionalProperties": false,
+            "properties": {
+                "model": {
+                    "type": "string",
+                    "description": "Hand model on the real robot, e.g. 'Brainco Revo2'."
+                },
+                "fingers": {
+                    "type": "integer",
+                    "description": "Number of fingers."
+                },
+                "dof": {
+                    "type": "integer",
+                    "description": "Actuated DOF of one hand (e.g. 6 motors)."
+                },
+                "control": {
+                    "type": "string",
+                    "description": "How the hand is commanded (e.g. 'Modbus -> TCP JSON bridge', see brainco_touch)."
+                },
+                "tactile": {
+                    "type": "boolean",
+                    "description": "Whether the hand exposes touch/proximity sensing."
+                }
+            }
+        },
+        "sensors": {
+            "type": "array",
+            "description": "Each perceptual sensor characterized on the hardware: its mount, pose, FOV, and — critically — the blind spots the robot's own body imposes. The sim sensors are built to share these (stage-isaac-sensors).",
+            "items": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "mount_link",
+                    "pose"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "camera",
+                            "depth_camera",
+                            "lidar",
+                            "imu",
+                            "tactile",
+                            "other"
+                        ]
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "e.g. 'Intel RealSense D435i', 'Livox MID-360'."
+                    },
+                    "mount_link": {
+                        "type": "string",
+                        "description": "Link the sensor is rigidly mounted to, e.g. 'torso_link'."
+                    },
+                    "pose": {
+                        "type": "object",
+                        "description": "Sensor pose relative to mount_link.",
+                        "additionalProperties": false,
+                        "properties": {
+                            "xyz_m": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "minItems": 3,
+                                "maxItems": 3,
+                                "description": "Translation in metres (+x forward, +y left, +z up)."
+                            },
+                            "tilt_deg": {
+                                "type": "number",
+                                "description": "Downward pitch / tilt in degrees, where applicable (e.g. a head camera angled at the floor). Calibrate on hardware — see 'calibration'."
+                            },
+                            "roll_correction_deg": {
+                                "type": "number",
+                                "description": "Software roll correction applied because the device is physically mounted rotated (e.g. a LiDAR mounted upside down)."
+                            }
+                        }
+                    },
+                    "fov": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "vertical_deg": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                            },
+                            "horizontal_deg": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                            }
+                        }
+                    },
+                    "occlusions": {
+                        "type": "array",
+                        "description": "The blind spots the robot's own geometry imposes — the whole point of real-to-sim sensing. Each is a region the sim sensor must also blank so a sim-trained detector transfers.",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "kind",
+                                "description"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "kind": {
+                                    "type": "string",
+                                    "description": "e.g. 'azimuth_band', 'elevation_floor', 'self_reflection'."
+                                },
+                                "range_deg": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    },
+                                    "description": "Angular range of the blind spot, where applicable."
+                                },
+                                "range_m": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    },
+                                    "description": "Radial range, where applicable (e.g. self-reflection inside a radius)."
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "calibration": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "method": {
+                                "type": "string",
+                                "description": "How the pose/tilt was measured on hardware, e.g. 'floor-plane SVD fit'."
+                            },
+                            "date": {
+                                "type": "string"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "reference_media": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Paths to on-hardware captures that are the 'what a calibrated envelope looks like' reference for this sensor."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "walk_policy": {
+            "type": "object",
+            "description": "The deploy obs/action layout of the robot's walking policy — needed to deploy a policy out of the RL env and to set the reach policy's neutral to the walk default.",
+            "additionalProperties": false,
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "description": "Where the policy comes from, e.g. 'unitree_rl_lab velocity-walk (exported ONNX)'."
+                },
+                "obs_spec": {
+                    "type": "string",
+                    "description": "Human-readable observation spec (terms, scales, history length, total dim)."
+                },
+                "action_spec": {
+                    "type": "string",
+                    "description": "Action map, e.g. 'raw*0.25 + default_joint_pos, applied to N body joints in articulation order'."
+                },
+                "command_ranges": {
+                    "type": "string",
+                    "description": "Velocity command ranges, e.g. 'vx[-0.5,1.0] vy[-0.3,0.3] wz[-0.2,0.2]'."
+                }
+            }
+        },
+        "sim_asset": {
+            "type": "object",
+            "description": "The Isaac Sim asset this real robot is staged against — and how the two differ. The sim asset is often a HIGHER-DOF or different-hand model than the real robot; the reconciliation below makes a sim-trained policy transfer-valid.",
+            "required": [
+                "usd_uri",
+                "dof",
+                "sim_real_reconciliation"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "usd_uri": {
+                    "type": "string",
+                    "description": "USD path of the sim asset, e.g. an ISAACLAB_NUCLEUS_DIR Robots/... path."
+                },
+                "dof": {
+                    "type": "integer",
+                    "description": "Body DOF of the sim asset (may exceed the real robot's)."
+                },
+                "hand": {
+                    "type": "string",
+                    "description": "Hand on the sim asset, e.g. 'Inspire FTP (5-finger)'."
+                },
+                "joint_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Joint names in the sim articulation order."
+                },
+                "sim_real_reconciliation": {
+                    "type": "object",
+                    "description": "How the sim asset is made to match the real robot so a sim-trained policy transfers. THE crux of real-to-sim for a mismatched asset.",
+                    "required": [
+                        "locked_sim_joints"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "locked_sim_joints": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Sim joints PRESENT in the asset but ABSENT on the real robot. These must be held at their default and EXCLUDED from the policy's action set, so the trained policy only commands DOF the real robot actually has (otherwise it learns to balance/reach using joints the hardware can't move, and never transfers)."
+                        },
+                        "hand_substitution": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "real": {
+                                    "type": "string"
+                                },
+                                "sim": {
+                                    "type": "string"
+                                },
+                                "rationale": {
+                                    "type": "string",
+                                    "description": "Why this sim hand was chosen for the real hand (match finger count / morphology, not brand)."
+                                }
+                            }
+                        },
+                        "notes": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "provenance": {
+            "type": "object",
+            "description": "Where this descriptor came from, for auditability.",
+            "additionalProperties": false,
+            "properties": {
+                "characterized_date": {
+                    "type": "string"
+                },
+                "characterized_by": {
+                    "type": "string"
+                },
+                "skills_used": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "notes": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,172 @@
+{
+    "schema_version": "1.0",
+    "manufacturer": "Unitree",
+    "product": "G1",
+    "variant": "29dof (full waist + wrist articulation, Inspire 5-finger hands)",
+    "verified_on_hardware": false,
+    "asset_sources": {
+        "urdf_uri": "unitree_ros / g1_description g1_29dof_*.urdf",
+        "usd_uri": "ISAACLAB_NUCLEUS_DIR/Robots/Unitree/G1/g1_29dof_inspire_hand.usd",
+        "notes": "The common research configuration: a full 29-DOF G1. The sim asset matches the real robot's DOF exactly, so the reconciliation is the identity (no locked joints). This is the CLEAN/default case; see unitree_g1_edu.json for the reduced 23-DOF variant that needs joints locked."
+    },
+    "effectors": {
+        "dof": 29,
+        "joint_order": [
+            "left_hip_pitch_joint",
+            "left_hip_roll_joint",
+            "left_hip_yaw_joint",
+            "left_knee_joint",
+            "left_ankle_pitch_joint",
+            "left_ankle_roll_joint",
+            "right_hip_pitch_joint",
+            "right_hip_roll_joint",
+            "right_hip_yaw_joint",
+            "right_knee_joint",
+            "right_ankle_pitch_joint",
+            "right_ankle_roll_joint",
+            "waist_yaw_joint",
+            "waist_roll_joint",
+            "waist_pitch_joint",
+            "left_shoulder_pitch_joint",
+            "left_shoulder_roll_joint",
+            "left_shoulder_yaw_joint",
+            "left_elbow_joint",
+            "left_wrist_roll_joint",
+            "left_wrist_pitch_joint",
+            "left_wrist_yaw_joint",
+            "right_shoulder_pitch_joint",
+            "right_shoulder_roll_joint",
+            "right_shoulder_yaw_joint",
+            "right_elbow_joint",
+            "right_wrist_roll_joint",
+            "right_wrist_pitch_joint",
+            "right_wrist_yaw_joint"
+        ],
+        "morphology": [
+            {
+                "segment": "left_leg",
+                "present_joints": ["left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint", "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint"]
+            },
+            {
+                "segment": "right_leg",
+                "present_joints": ["right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint", "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint"]
+            },
+            {
+                "segment": "waist",
+                "present_joints": ["waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint"]
+            },
+            {
+                "segment": "left_arm",
+                "present_joints": ["left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint"]
+            },
+            {
+                "segment": "right_arm",
+                "present_joints": ["right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint"]
+            }
+        ],
+        "pd_gains": [
+            {"joints": ".*_hip_.*_joint", "stiffness": 60.0, "damping": 1.0},
+            {"joints": ".*_knee_joint", "stiffness": 100.0, "damping": 2.0},
+            {"joints": ".*_ankle_.*_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": "waist_yaw_joint", "stiffness": 60.0, "damping": 1.0},
+            {"joints": "waist_roll_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": "waist_pitch_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": ".*_shoulder_.*_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": ".*_elbow_joint", "stiffness": 40.0, "damping": 1.0},
+            {"joints": ".*_wrist_.*_joint", "stiffness": 40.0, "damping": 1.0}
+        ],
+        "default_pose": {
+            ".*_hip_pitch_joint": -0.10,
+            ".*_knee_joint": 0.30,
+            ".*_ankle_pitch_joint": -0.20,
+            "waist_yaw_joint": 0.0,
+            "waist_roll_joint": 0.0,
+            "waist_pitch_joint": 0.0,
+            "left_shoulder_pitch_joint": 0.30,
+            "right_shoulder_pitch_joint": 0.30,
+            "left_shoulder_roll_joint": 0.25,
+            "right_shoulder_roll_joint": -0.25,
+            "left_elbow_joint": 0.97,
+            "right_elbow_joint": 0.97,
+            "left_wrist_roll_joint": 0.15,
+            "right_wrist_roll_joint": -0.15
+        },
+        "ee_links": {
+            "left": "left_wrist_yaw_link",
+            "right": "right_wrist_yaw_link",
+            "notes": "Full wrist chain present, so the EE is the canonical *_wrist_yaw_link (same convention as NVIDIA's locomanipulation G1 env)."
+        }
+    },
+    "hands": {
+        "model": "Inspire FTP (5-finger)",
+        "fingers": 5,
+        "dof": 6,
+        "control": "vendor SDK",
+        "tactile": false
+    },
+    "sensors": [
+        {
+            "name": "head_depth",
+            "type": "depth_camera",
+            "model": "Intel RealSense D435i",
+            "mount_link": "torso_link",
+            "pose": {
+                "xyz_m": [0.06, 0.0, 0.45],
+                "tilt_deg": 51.29
+            },
+            "calibration": {
+                "method": "floor-plane SVD fit (re-measure per robot — see unitree/g1/depth_camera_sight)",
+                "notes": "Tilt is robot-specific; 51.29 deg is the dev EDU value. Characterize on YOUR hardware."
+            }
+        },
+        {
+            "name": "crown_lidar",
+            "type": "lidar",
+            "model": "Livox MID-360",
+            "mount_link": "torso_link",
+            "pose": {
+                "xyz_m": [0.0003, 0.0, 0.416],
+                "tilt_deg": 2.3,
+                "roll_correction_deg": 180.0
+            },
+            "fov": {
+                "vertical_deg": [-45, 52],
+                "horizontal_deg": [-180, 180]
+            },
+            "occlusions": [
+                {"kind": "azimuth_band", "range_deg": [40, 45], "description": "Face-frame bars (verify on YOUR head geometry)."},
+                {"kind": "elevation_floor", "range_deg": [-90, -10], "description": "Chin blanks low elevation (verify)."},
+                {"kind": "self_reflection", "range_m": [0.0, 0.15], "description": "Dome self-returns at the origin."}
+            ],
+            "calibration": {
+                "notes": "Self-occlusions depend on the head/crown geometry; re-characterize per robot with unitree/g1/lidar_sight."
+            }
+        }
+    ],
+    "walk_policy": {
+        "source": "unitree_rl_lab velocity-walk (exported ONNX); torch MLP on GPU.",
+        "obs_spec": "480-D = 5-step term-major history of [base_ang_vel*0.2 (3), projected_gravity (3), velocity_commands (3), joint_pos_rel (29), joint_vel_rel*0.05 (29), last_action (29)].",
+        "action_spec": "raw*0.25 + default_joint_pos, applied to all 29 body joints in Isaac articulation order.",
+        "command_ranges": "vx[-0.5,1.0] vy[-0.3,0.3] wz[-0.2,0.2] m/s, 50 Hz."
+    },
+    "sim_asset": {
+        "usd_uri": "ISAACLAB_NUCLEUS_DIR/Robots/Unitree/G1/g1_29dof_inspire_hand.usd",
+        "dof": 29,
+        "hand": "Inspire FTP (5-finger)",
+        "sim_real_reconciliation": {
+            "locked_sim_joints": [],
+            "hand_substitution": {
+                "real": "Inspire FTP (5-finger)",
+                "sim": "Inspire FTP (5-finger)",
+                "rationale": "Identity — the sim hand matches the real hand. (If your 29-DOF G1 has Dex3 3-finger hands, set the sim hand to match its finger count instead.)"
+            },
+            "notes": "The sim asset matches the real robot's 29 DOF exactly, so NOTHING is locked — the policy commands all 29 body joints. The issue#2 bed-reach policy (trained on this 29-DOF asset) is directly transfer-valid here. This is the common research path."
+        }
+    },
+    "provenance": {
+        "characterized_date": "2026-06-09",
+        "characterized_by": "template descriptor for a stock 29-DOF G1 — fill sensor calibrations from YOUR hardware before staging.",
+        "skills_used": ["discover-robot"],
+        "notes": "Reference example of the full-DOF, sim==real happy path. The pd_gains are the factory G1 Kp/Kd from the on-robot unitree_sdk2_python G1 low-level example (legs Kp 60/60/60/100/40/40, waist 60/40/40, arms 40; Kd legs 1/1/1/2/1/1, arms 1). Verify sensor tilts/occlusions on YOUR robot; they are robot-specific. For an RL walk/loco-manip policy you may instead stage the stiffer unitree_rl_gym walk-policy training gains — see unitree_g1_edu.json provenance."
+    }
+}
