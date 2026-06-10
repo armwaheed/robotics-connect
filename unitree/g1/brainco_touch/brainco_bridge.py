@@ -99,6 +99,7 @@ Protocol: newline-delimited JSON over TCP on 127.0.0.1:9877
 """
 
 import argparse
+import glob
 import json
 import logging
 import socket
@@ -237,6 +238,70 @@ def _write_multiple_registers(ser, slave_id, addr, values):
     if _modbus_crc(resp[:-2]) != struct.unpack("<H", resp[-2:])[0]:
         return False
     return True
+
+
+# ---------------------------------------------------------------------------
+# USB-port auto-detect (probe-based — never hard-assume a ttyUSB number)
+# ---------------------------------------------------------------------------
+
+def detect_hand_ports(baud=DEFAULT_BAUD, candidates=None, timeout=0.2):
+    """Probe serial ports for the two Brainco hands by Modbus slave id.
+
+    The USB-port trap: both hands are channels of a single FTDI quad chip, so VID/PID **and serial
+    are identical** across all four ``/dev/ttyUSB*`` ports, and the port->hand assignment drifts
+    across robots and reboots. The only reliable identifier is the Modbus **slave id** — left ``0x7e``,
+    right ``0x7f``. We open each candidate port and issue a tiny input-register read for each slave id;
+    whichever slave answers identifies the hand on that port (each hand is on its own FTDI UART
+    channel, so a port carries at most one hand; empty channels simply time out).
+
+    Returns ``{"left": port|None, "right": port|None, "scanned": [...], "errors": {port: msg}}``.
+    """
+    if candidates is None:
+        candidates = sorted(glob.glob("/dev/ttyUSB*"))
+    found = {"left": None, "right": None, "scanned": list(candidates), "errors": {}}
+    targets = ((SLAVE_ID_L, "left"), (SLAVE_ID_R, "right"))
+    for port in candidates:
+        if found["left"] and found["right"]:
+            break
+        try:
+            ser = serial.Serial(port, baud, timeout=timeout)
+        except (serial.SerialException, OSError) as e:
+            found["errors"][port] = str(e)
+            log.debug("probe: cannot open %s: %s", port, e)
+            continue
+        try:
+            for slave_id, side in targets:
+                if found[side] is not None:
+                    continue
+                # A 1-register read is enough to elicit (or not) a slave response.
+                if _read_input_registers(ser, slave_id, REG_MOTOR_STATUS_ADDR, 1) is not None:
+                    found[side] = port
+                    log.info("probe: %s answers Modbus 0x%02x -> %s hand", port, slave_id, side)
+                    break
+        finally:
+            ser.close()
+    return found
+
+
+def resolve_hand_ports(port_l=None, port_r=None, baud=DEFAULT_BAUD):
+    """Resolve the left/right hand ports, auto-detecting any that weren't given explicitly.
+
+    Honors an explicit ``--port-l`` / ``--port-r`` (skips the probe for that side); otherwise probes
+    by slave id. Raises ``RuntimeError`` if a hand can't be found, rather than falling back to a
+    hard-coded guess (a wrong port is worse than a clear failure)."""
+    if port_l and port_r:
+        return port_l, port_r
+    detected = detect_hand_ports(baud)
+    port_l = port_l or detected["left"]
+    port_r = port_r or detected["right"]
+    if not port_l or not port_r:
+        raise RuntimeError(
+            f"could not auto-detect both Brainco hands (left={port_l}, right={port_r}); "
+            f"scanned {detected['scanned']}, errors={detected['errors']}. "
+            f"Check hand power/USB and serial permissions (e.g. `sudo chmod 666 /dev/ttyUSB*`), "
+            f"or pass --port-l/--port-r explicitly."
+        )
+    return port_l, port_r
 
 
 # ---------------------------------------------------------------------------
@@ -512,10 +577,15 @@ def main():
     parser = argparse.ArgumentParser(
         description="Brainco Revo2 direct-modbus bridge (no ROS2 / no stark_node / no SDK)",
     )
-    parser.add_argument("--port-l", default=DEFAULT_PORT_L)
-    parser.add_argument("--port-r", default=DEFAULT_PORT_R)
+    parser.add_argument("--port-l", default=None,
+                        help="Left hand serial port (default: auto-detect by Modbus slave 0x7e).")
+    parser.add_argument("--port-r", default=None,
+                        help="Right hand serial port (default: auto-detect by Modbus slave 0x7f).")
     parser.add_argument("--baud", type=int, default=DEFAULT_BAUD)
     parser.add_argument("--tcp-port", type=int, default=PORT)
+    parser.add_argument("--detect", action="store_true",
+                        help="Probe and print which port each hand is on, then exit "
+                             "(exit 0 only if BOTH hands are found).")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -523,12 +593,18 @@ def main():
         format="%(asctime)s %(levelname)s %(message)s",
     )
 
-    log.info("Brainco bridge — pure pyserial modbus")
-    log.info("Left  hand: %s slave=0x%02x", args.port_l, SLAVE_ID_L)
-    log.info("Right hand: %s slave=0x%02x", args.port_r, SLAVE_ID_R)
+    if args.detect:
+        d = detect_hand_ports(args.baud)
+        print(json.dumps({"left": d["left"], "right": d["right"], "scanned": d["scanned"]}))
+        return 0 if (d["left"] and d["right"]) else 1
 
-    left = HandReader(args.port_l, SLAVE_ID_L, args.baud, "left")
-    right = HandReader(args.port_r, SLAVE_ID_R, args.baud, "right")
+    log.info("Brainco bridge — pure pyserial modbus")
+    port_l, port_r = resolve_hand_ports(args.port_l, args.port_r, args.baud)
+    log.info("Left  hand: %s slave=0x%02x", port_l, SLAVE_ID_L)
+    log.info("Right hand: %s slave=0x%02x", port_r, SLAVE_ID_R)
+
+    left = HandReader(port_l, SLAVE_ID_L, args.baud, "left")
+    right = HandReader(port_r, SLAVE_ID_R, args.baud, "right")
 
     try:
         _serve(left, right, args.tcp_port)
@@ -540,4 +616,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

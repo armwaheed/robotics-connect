@@ -17,6 +17,11 @@ torch **out** of the host `unitree_deploy` env — host consumers stay CPU-torch
 the sidecar when they need accelerated inference. Install, the service unit, and the RPC contract are in
 **[`README.md`](README.md)** — this skill is the agent entry point.
 
+> **Verified on hardware (2026-06-10):** built from the in-repo Dockerfile as
+> `robotics-connect/vision-sidecar:0.1`, runs on the Jetson Orin **GPU** (`device=cuda`), and encodes a
+> 480×640 RGB frame to the correct **384-d** DINOv2 CLS token at **~27.5 ms/frame** (~10× the CPU path).
+> See [`VERIFICATION.md`](../../../VERIFICATION.md).
+
 ## When to use
 
 - A consumer downstream of the G1's RGB frames ([`unitree-g1-sense-depth`](../depth_camera_sight/SKILL.md))

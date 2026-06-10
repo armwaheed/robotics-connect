@@ -182,7 +182,18 @@ reboots — always probe, never hard-assume.**
 | `/dev/ttyUSB2` | FTDI quad ch C | `0403:6011` | `FTB3GNPM` | **Right hand** — Modbus slave `0x7f` |
 | `/dev/ttyUSB3` | FTDI quad ch D | `0403:6011` | `FTB3GNPM` | not a hand (no `0x7e`/`0x7f`) |
 
-Bridge defaults: `DEFAULT_PORT_L=/dev/ttyUSB1`, `DEFAULT_PORT_R=/dev/ttyUSB2`, baud `460800`.
+**Auto-detect (2026-06-10):** the bridge now **probes** for the hands by Modbus slave id instead of
+trusting a hard-coded port — `detect_hand_ports()` runs by default, and `--detect` prints the mapping:
+
+```bash
+python brainco_bridge.py --detect
+# probe: /dev/ttyUSB1 answers Modbus 0x7e -> left hand
+# probe: /dev/ttyUSB2 answers Modbus 0x7f -> right hand
+# {"left": "/dev/ttyUSB1", "right": "/dev/ttyUSB2", "scanned": [...]}
+```
+
+So a reboot that reshuffles the FTDI channels no longer breaks the hands. Pass `--port-l`/`--port-r` to
+override the probe; baud `460800`. (The legacy `DEFAULT_PORT_*` constants remain only as documentation.)
 
 ### Digit (motor) mapping — `set` command, `[6 floats, 0..1]`
 
