@@ -46,6 +46,13 @@ PROFILE_HOOK="/etc/profile.d/robotics-connect.sh"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${HERE}/.." && pwd)"
 
+# ── --verify / verify: run the install self-check instead of installing ──
+# Folds the by-hand sensor + hand checks into one PASS/FAIL scoreboard (see verify.sh).
+if [[ "${1:-}" == "--verify" || "${1:-}" == "verify" ]]; then
+    shift
+    exec bash "${HERE}/verify.sh" "$@"
+fi
+
 # Offline bundle layout: produced by build-offline-bundle.sh on a machine
 # with internet + docker, then shipped to the robot. If a sibling offline/
 # directory exists (i.e. the repo was extracted from robotics-connect-offline-*.tar),
@@ -191,4 +198,5 @@ echo "  1. Open a new shell (or source ${PROFILE_HOOK})"
 echo "  2. conda activate ${CONDA_ENV}"
 echo "  3. python ${INSTALL_DIR}/arm_fk/arm_fk.py"
 echo
-echo "  Uninstall: ${INSTALL_DIR}/install/uninstall.sh"
+echo "  Verify the whole install in one command:  bash ${INSTALL_DIR}/install/install.sh --verify"
+echo "  Uninstall:                                ${INSTALL_DIR}/install/uninstall.sh"

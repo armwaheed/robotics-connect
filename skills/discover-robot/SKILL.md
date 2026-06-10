@@ -32,6 +32,22 @@ describing the *real* robot so the simulator can be built to match it.
 
 ## The procedure
 
+### 0. Make the robot's capability stack live (delegate to its bootstrap)
+Before you can characterize a robot, its capability tools must be runnable on the hardware (sensor
+bindings built, a Python env, DDS/serial wired). **This skill stays robot-agnostic — it does not contain
+robot-specific install steps; it delegates to the robot-scoped bootstrap.** First probe whether the
+stack is already live, and bootstrap only if not:
+
+```bash
+# Is the robot's stack already healthy? (probe, don't assume)
+bash <robot>/install/install.sh --verify   ||   bash <robot>/install/install.sh   # bootstrap if not
+```
+
+For the Unitree G1 that bootstrap is the [`unitree-g1-install`](../../unitree/g1/install/SKILL.md) skill;
+its `--verify` is a probe-based PASS/FAIL self-check (sensors + hands). A different robot brings its own
+bootstrap skill — `discover-robot` just *calls* it. (The bootstrap remains independently deployable on
+its own, per the manufacturer/product convention; discovery subordinates it without absorbing it.)
+
 ### 1. Identify the robot and acquire its asset
 Determine `manufacturer`, `product`, and the as-built `variant`. Acquire the kinematic/visual asset
 (URDF from the vendor SDK / `unitree_ros` / `g1_description`; USD for Isaac Sim). Record both under
