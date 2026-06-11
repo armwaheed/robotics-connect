@@ -101,6 +101,7 @@ class G1Speaker:
         app_name: str = "robotics-connect",
         init_dds: bool = True,
         wpm: float = 165.0,
+        speaker_id: int = 4,
     ) -> None:
         self.iface = iface
         self.domain = domain
@@ -108,6 +109,9 @@ class G1Speaker:
         self.app_name = app_name
         self.wpm = wpm  # words/min, to estimate how long TtsMaker will speak (it returns instantly)
         self._init_dds = init_dds
+        # TtsMaker voice. On the tested G1 EDU firmware: 0 = Chinese (female); 1-4 = English (a
+        # faint Chinese accent). 4 is the default English voice; override per robot/firmware.
+        self.speaker_id = speaker_id
         self._client = None
         self._available = False
         self._tried = False
@@ -138,15 +142,17 @@ class G1Speaker:
         return self._ensure()
 
     # -- speaking -------------------------------------------------------------------------------
-    def say(self, text: str, speaker_id: int = 0, wait: bool = True) -> bool:
+    def say(self, text: str, speaker_id: Optional[int] = None, wait: bool = True) -> bool:
         """Speak `text` with the built-in TTS. `TtsMaker` returns immediately, so when `wait` is
         True we block for an estimate of the spoken duration (so the caller can listen *after* the
-        robot finishes — there is no echo cancellation). Returns True if it actually spoke."""
+        robot finishes — there is no echo cancellation). Returns True if it actually spoke.
+        `speaker_id` defaults to the constructor's voice (English on the tested firmware)."""
+        sid = self.speaker_id if speaker_id is None else speaker_id
         print(f'[g1-voice] 🔊 "{text}"')
         spoke = False
         if self._ensure():
             try:
-                code = self._client.TtsMaker(text, speaker_id)
+                code = self._client.TtsMaker(text, sid)
                 spoke = (code == 0)
                 if code != 0:
                     print(f"[g1-voice] TtsMaker returned code {code}")
