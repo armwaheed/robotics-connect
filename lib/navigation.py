@@ -250,11 +250,12 @@ class Navigator:
             stalled = False
             for wp in waypoints[1:]:
                 here = loco.pose()
-                loco.turn_to(math.atan2(wp[1] - here.y, wp[0] - here.x))
-                result = loco.walk_to(wp, **walk_kwargs)
-                if result == "timeout":
+                if loco.turn_to(math.atan2(wp[1] - here.y, wp[0] - here.x)) == "aborted":
                     return False
-                if result is not None:  # stall reason → re-plan from here
+                result = loco.walk_to(wp, **walk_kwargs)
+                if result in ("timeout", "aborted"):
+                    return False  # give up (timeout) or honour the operator abort immediately
+                if result is not None:  # any other stall reason → re-plan from here
                     stalled = True
                     break
             if not stalled:

@@ -91,6 +91,7 @@ class G1Remote:
         while not self._have_frame and time.monotonic() < deadline:
             time.sleep(0.02)
         if not self._have_frame:
+            self.shutdown()  # don't leak the subscriber on the error path
             raise RuntimeError("no rt/lowstate in 3 s — is the robot on?")
 
     def _on_state(self, msg) -> None:

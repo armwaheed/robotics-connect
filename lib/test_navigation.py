@@ -62,6 +62,18 @@ def test_inflation_blocks_too_narrow_a_gap():
     assert astar(grid, (0.0, 0.0), (2.0, 0.0)) is None
 
 
+def test_navigator_honours_abort():
+    # An abort mid-navigate must propagate out (return False), not be mistaken for
+    # a stall and re-planned to exhaustion.
+    nav = Navigator(goal_tolerance_m=0.2)
+    loco = SimLocomotion()
+    loco.set_abort_source(lambda: loco.pose().x > 0.3)  # trips once it starts moving
+    reached = nav.navigate(loco, (3.0, 0.0), lambda: EMPTY,
+                           vmax=1.0, tolerance_m=0.15, timeout_s=8.0)
+    assert reached is False, "abort mid-navigate must return False immediately"
+    assert loco.pose().x < 1.0, "should have stopped near the abort point, not pressed on"
+
+
 def test_navigator_drives_sim_around_obstacle():
     nav = Navigator(goal_tolerance_m=0.2)
     loco = SimLocomotion()

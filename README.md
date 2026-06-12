@@ -59,6 +59,8 @@ robotics-connect/
 │       ├── vision_sidecar/      #   containerized GPU (DINOv2) inference sidecar
 │       ├── install/             #   on-robot deploy / uninstall / offline bundle
 │       └── connect/             #   host ↔ robot networking (configure_*.sh + CycloneDDS)
+├── human_agent/                 # a HUMAN as a Device Connect device (headset + ASR; the robot asks it for help)
+├── lib/                         # shared modules (the Device Connect sidecar boilerplate, one copy)
 └── assets/media/                # validation media — the "what good looks like" reference standards
 ```
 

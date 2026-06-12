@@ -135,8 +135,8 @@ an expansion port. Verified live **2026-06-10**:
   Verified on an alternate port: `ping → device=cuda:0, device_count=1, devices=[Orin 15.0 GB]`, encode → 384 floats.
 - **Port-coexistence pattern** (now part of the skill): a private build's service was auto-grabbing
   `9878` on boot; the robotics-connect sidecar was verified on `9879` via `VISION_SIDECAR_PORT` without
-  disturbing it. The private `robotube-vision-sidecar.service` was then **disabled** (per operator), and
-  the robotics-connect sidecar now owns `9878` with full topology reporting.
+  disturbing it. That pre-existing private vision-sidecar service was then **disabled** (per operator),
+  and the robotics-connect sidecar now owns `9878` with full topology reporting.
 
 ## Environment
 

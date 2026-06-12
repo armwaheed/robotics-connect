@@ -99,6 +99,7 @@ class G1Locomotion(LocomotionController):
         while self._odom is None and time.monotonic() < deadline:
             time.sleep(0.02)
         if self._odom is None:
+            self.shutdown()  # don't leak the subscriber on the error path
             raise RuntimeError(f"no {ODOM_TOPIC} in 3 s — is the robot on?")
         p = self.pose()
         print(f"[G1Locomotion] odom live  pose=({p.x:+.2f}, {p.y:+.2f}, "
@@ -109,7 +110,10 @@ class G1Locomotion(LocomotionController):
             self._odom = msg
 
     def shutdown(self) -> None:
-        self.stop()
+        try:
+            self.stop()  # never let cleanup raise (e.g. called from connect()'s error path)
+        except Exception:
+            pass
         if self._sub is not None:
             try:
                 self._sub.Close()
