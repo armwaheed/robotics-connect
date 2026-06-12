@@ -15,6 +15,10 @@ metadata:
 
 # Bootstrap a Device Connect environment (without breaking the vendor SDK)
 
+This skill sets up the runtime for **[Arm Device Connect](https://github.com/arm/device-connect)**
+(`device-connect-edge`) — the open-source agent-orchestration framework the robotics-connect drivers
+(e.g. [`unitree/g1/device_connect`](../../unitree/g1/device_connect/SKILL.md), `human_agent`) plug into.
+
 `device-connect-edge` needs **Python ≥ 3.11**. The robot's SDK almost never does. That single
 collision is the #1 reason a Device Connect bring-up stalls on a new humanoid — and the wrong fix
 (rebuild the SDK on 3.11) bricks a working robot. This skill resolves it **agentically**: it doesn't

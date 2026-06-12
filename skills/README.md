@@ -55,6 +55,10 @@ all of them uniformly.
 |---|---|
 | [`unitree/g1/depth_camera_sight`](../unitree/g1/depth_camera_sight/SKILL.md) | Head Intel RealSense depth + RGB; floor-plane-calibrated **51.29° down-tilt**; body-frame geometry. **Depth needs `pyrealsense2` built from source (`install_pyrealsense2.sh`) + `setup_env.sh` sourced** — not a pip install (GLIBC). RGB is dependency-free (DDS). |
 | [`unitree/g1/lidar_sight`](../unitree/g1/lidar_sight/SKILL.md) | Crown Livox MID-360; table/bed detection; **face-frame / chin self-occlusions** characterized on hardware. |
+| [`unitree/g1/locomotion`](../unitree/g1/locomotion/SKILL.md) | Walk / navigate to a goal — `LocoClient` velocity + **measured `rt/odommodestate`** + A* planning; robot-agnostic core in `lib/`. |
+| [`unitree/g1/controller`](../unitree/g1/controller/SKILL.md) | Read the handheld remote → **any-button routine abort** (verified button-by-button). A software halt — **not** the e-stop. |
+| [`unitree/g1/voice`](../unitree/g1/voice/SKILL.md) | **Speak** (chest-speaker TTS) + **listen** (mic→ASR, grounded reply). The mic is not a developer interface — capture at the OS level. |
+| [`unitree/g1/device_connect`](../unitree/g1/device_connect/SKILL.md) | The G1 **driver for [Arm Device Connect](https://github.com/arm/device-connect)** — registers the robot as a fabric device (`say` / `request_help` / `get_status`). Device Connect is the skill; this only adapts the G1 to it. |
 | [`unitree/g1/arm_fk`](../unitree/g1/arm_fk/SKILL.md) | Pure-numpy URDF forward kinematics; palm XYZ in the camera body frame; **23-DOF-vs-29-DOF** wrist handling. |
 | [`unitree/g1/brainco_touch`](../unitree/g1/brainco_touch/SKILL.md) | Brainco 5-finger hands — digits, touch, proximity (the real hand; the sim uses Inspire). |
 | [`unitree/g1/vision_sidecar`](../unitree/g1/vision_sidecar/SKILL.md) | Containerized GPU (DINOv2) inference sidecar over local RPC. |
