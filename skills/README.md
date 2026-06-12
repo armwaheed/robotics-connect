@@ -42,6 +42,7 @@ all of them uniformly.
 | Skill | When to use it |
 |---|---|
 | [`discover-robot`](discover-robot/SKILL.md) | **The keystone.** Inventory a connected robot's sensors + effectors and emit its machine-readable **robot descriptor** — the real-to-sim card every staging skill below consumes. Run this first for any robot, known or new. |
+| [`perceive-surfaces`](perceive-surfaces/SKILL.md) | **Real-robot perception.** From the descriptor's depth/LiDAR, detect flat surfaces (table/bed) and project them + a hand target into the **body frame** — **LiDAR-first** (depth is coarse-only on textureless bedding). The live counterpart to `stage-isaac-sensors`; the per-sensor algorithms live in the G1 bindings. |
 | [`stage-isaac-sensors`](stage-isaac-sensors/SKILL.md) | Turn the descriptor's sensor characterization into Isaac Sim sensor configs that **share the real sensor's envelope + blind spots** (head-cam down-tilt, LiDAR self-occlusions), so a sim-trained detector transfers. |
 | [`stage-isaac-freebase`](stage-isaac-freebase/SKILL.md) | Get a manufacturer USD/URDF into Isaac Lab as a **free-base** articulation with **deploy PD gains** and no kinematic cheats — including the baked-world-pin fix and **locking the sim DOFs the real robot lacks**. |
 | [`stage-isaac-rl-env`](stage-isaac-rl-env/SKILL.md) | Stand up a runnable manager-based Isaac Lab RL **reach / loco-manipulation** env from the descriptor: station-keeping, FALCON-style grip-slip load, SYMDEX ambidexterity, the training/eval gotchas baked in. |
