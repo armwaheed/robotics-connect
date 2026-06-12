@@ -40,8 +40,13 @@ import re
 import sys
 from typing import Dict, List, Optional, Sequence, Union
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)                       # for bt_headset
+sys.path.insert(0, os.path.dirname(_HERE))      # repo root, for dc_sidecar
 from bt_headset import RATE, Headset, discover  # noqa: E402
+from dc_sidecar import (  # noqa: E402
+    HAVE_DC, DeviceDriver, rpc, emit, DeviceIdentity, DeviceStatus, build_runtime, DEFAULT_NATS_URL,
+)
 
 log = logging.getLogger("human-agent")
 
@@ -126,23 +131,8 @@ def make_asr(backend: str = "auto", model: str = "base.en"):
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════
-#  The Device Connect driver
+#  The Device Connect driver  (DeviceDriver/rpc/emit/identity/status come from dc_sidecar)
 # ══════════════════════════════════════════════════════════════════════════════════════════════
-
-try:
-    from device_connect_edge.drivers import DeviceDriver, rpc, emit
-    from device_connect_edge.types import DeviceIdentity, DeviceStatus
-    _HAVE_DC = True
-except Exception:  # let the module import for --self-test even without the SDK
-    _HAVE_DC = False
-    DeviceDriver = object  # type: ignore
-
-    def rpc(*a, **k):  # type: ignore
-        def deco(fn):
-            return fn
-        return deco
-
-    emit = rpc  # type: ignore
 
 
 class HumanAgentDriver(DeviceDriver):
@@ -155,14 +145,14 @@ class HumanAgentDriver(DeviceDriver):
                  operator_name: str = "Human Operator",
                  earpiece_prompts: bool = True,
                  asr_backend: str = "auto", whisper_model: str = "base.en"):
-        if _HAVE_DC:
+        if HAVE_DC:
             super().__init__()
         self.headset = headset or Headset()
         self.display_name = display_name
         self.operator_name = operator_name
         # Whether ask() echoes the question into the EARPIECE. In the integrated robot flow the
-        # robot speaks the question through its OWN speaker, so Rabia calls ask(prompt_earpiece=
-        # False); standalone (no robot) it defaults True so the human can hear the question.
+        # robot speaks the question through its OWN speaker, so the robot agent calls
+        # ask(prompt_earpiece=False); standalone (no robot) it defaults True so the human hears it.
         self.earpiece_prompts = earpiece_prompts
         self._asr_backend = asr_backend
         self._whisper_model = whisper_model
@@ -205,7 +195,7 @@ class HumanAgentDriver(DeviceDriver):
         False because the robot speaks the question through its own speaker."""
         if prompt_earpiece is None:
             prompt_earpiece = self.earpiece_prompts
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         res = await loop.run_in_executor(
             None, self._ask_blocking, question, choices, listen_seconds, retries, prompt_earpiece)
         try:
@@ -218,7 +208,7 @@ class HumanAgentDriver(DeviceDriver):
     @rpc()
     async def notify(self, message: str) -> dict:
         """Speak a one-way status message into the human's earpiece (no reply expected)."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         spoken = await loop.run_in_executor(None, self.headset.say, message)
         return {"spoken": bool(spoken), "message": message}
 
@@ -260,39 +250,20 @@ class HumanAgentDriver(DeviceDriver):
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════
-#  Sidecar entry point
+#  Sidecar entry point  (creds + URL resolution + DeviceRuntime live in dc_sidecar.build_runtime)
 # ══════════════════════════════════════════════════════════════════════════════════════════════
-
-DEFAULT_NATS_URL = "nats://fabric.deviceconnect.dev:4222"
-
-
-def _load_creds(path: str) -> dict:
-    with open(os.path.expanduser(path)) as f:
-        return json.load(f)
 
 
 async def _run_fabric(args) -> None:
-    if not _HAVE_DC:
-        raise RuntimeError("device-connect-edge is not installed; use --self-test or install it.")
-    from device_connect_edge import DeviceRuntime
-
-    creds = _load_creds(args.creds)
-    device_id = args.device_id or creds.get("device_id") or "human-agent-0"
-    urls = [args.nats_url] if args.nats_url else (creds.get("nats", {}).get("urls") or [DEFAULT_NATS_URL])
-
     headset = Headset()
     driver = HumanAgentDriver(headset, display_name=args.name, operator_name=args.operator,
                               earpiece_prompts=args.earpiece,
                               asr_backend=args.asr, whisper_model=args.whisper_model)
-    log.info("Human Agent '%s' (%s) — %s", device_id, args.name, headset.ep.describe())
+    rt, creds, urls = build_runtime(driver, args.creds, device_id=args.device_id,
+                                    nats_url=args.nats_url)
+    log.info("Human Agent '%s' (%s) — %s", creds.get("device_id"), args.name, headset.ep.describe())
     log.info("Registering on the Device Connect fabric %s (tenant=%s)...",
              urls, creds.get("tenant", "default"))
-
-    rt = DeviceRuntime(
-        driver=driver, device_id=device_id, messaging_backend="nats",
-        messaging_urls=urls, credentials_file=os.path.expanduser(args.creds),
-        tenant=creds.get("tenant", "default"),
-    )
     if args.announce:
         # Greet the human so they know the agent is live and the earpiece works.
         try:

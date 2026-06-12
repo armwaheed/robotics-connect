@@ -39,23 +39,23 @@ bridge between them.
   goals). For high-frequency control, replace the subprocess with a **long-running SDK daemon** the
   sidecar talks to over a localhost socket (same boundary, lower latency).
 
-## Worked example — Rabia (Unitree G1 EDU)
+## Worked example — the Unitree G1 EDU
 
 The G1 EDU's SDK env is `robotics-connect` / `unitree_deploy` (Python 3.10, `unitree_sdk2py` +
 CycloneDDS). Device Connect runs in `dc-repro` (Python 3.11). The sidecar speaks through the robot's
 chest speaker by delegating to the SDK env. Simplified shape (see the real
-`unitree/g1/device_connect/rabia_agent.py` for the full version — it uses absolute script paths,
+`unitree/g1/device_connect/g1_agent.py` for the full version — it uses absolute script paths,
 captures output, and checks the exit code):
 
 ```python
-# rabia_agent.py  (runs in the 3.11 Device Connect env) — illustrative
+# g1_agent.py  (runs in the 3.11 Device Connect env) — illustrative
 SDK_PY = "/home/unitree/miniconda3/envs/robotics-connect/bin/python"
 
 def speak_blocking(text):                      # delegate to the SDK env (returns True on exit 0)
-    env = {**os.environ, "RABIA_DDS_IFACE": "eth0"}
+    env = {**os.environ, "G1_DDS_IFACE": "eth0"}
     return subprocess.run([SDK_PY, SPEAK_SCRIPT, text], env=env).returncode == 0
 
-class RabiaDriver(DeviceDriver):
+class G1AgentDriver(DeviceDriver):
     device_type = "unitree_g1"
     @rpc()
     async def request_help(self, question, choices="yesno"):
@@ -65,7 +65,7 @@ class RabiaDriver(DeviceDriver):
 ```
 
 ```python
-# rabia_speak.py  (runs in the SDK env — unitree_sdk2py + CycloneDDS on eth0)
+# g1_speak.py  (runs in the SDK env — unitree_sdk2py + CycloneDDS on eth0)
 from g1_voice import G1Speaker
 G1Speaker(iface="eth0", default_volume=100).say(sys.argv[1])
 ```

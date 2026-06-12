@@ -17,7 +17,7 @@ Module: [`human_agent.py`](human_agent.py) (the Device Connect driver) + [`bt_he
 sequenceDiagram
     autonumber
     participant H as 🧑 Human partner
-    participant R as Rabia · G1 EDU<br/>(chest speaker)
+    participant R as G1 EDU<br/>(chest speaker)
     participant DC as Device Connect<br/>NATS fabric · beta
     participant HA as Human Agent<br/>(Bluetooth headset)
     R->>R: competence monitor → stuck<br/>(out of reach / high resistance)
@@ -46,7 +46,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     H(("🧑 Human"))
-    subgraph R["Rabia · Unitree G1 EDU"]
+    subgraph R["Unitree G1 EDU"]
       AC["Unitree AudioClient<br/>TtsMaker · vol 100"] --> SPK[/"chest speaker"/]
     end
     subgraph S["DGX Spark · Human Agent sidecar"]
@@ -60,7 +60,7 @@ flowchart LR
 
 ## Validated on hardware
 
-The full loop ran live on the physical G1 EDU ("Rabia") + a Jabra Talk 25 SE on the DGX Spark — both
+The full loop ran live on the physical G1 EDU + a Jabra Talk 25 SE on the DGX Spark — both
 devices online on the Device Connect dashboard, the question spoken out loud, the answer captured and
 grounded, and the `human_replied` event posted.
 
@@ -77,7 +77,7 @@ announcements are audible again:
 ![Pipeline latency + speaker gain](media/audio_pipeline_validation.png)
 
 **Both devices live on the Device Connect dashboard** (`beta` tenant) — the Human Agent with its
-`ask`/`notify`/`presence` functions + `human_replied` event, and Rabia with `say`/`request_help`/
+`ask`/`notify`/`presence` functions + `human_replied` event, and the G1 with `say`/`request_help`/
 `get_status` + `help_requested`/`help_answered`:
 
 ![Device Connect dashboard](media/device_connect_dashboard.png)

@@ -65,9 +65,9 @@ Conda-or-venv agnostic, idempotent. Never touches the SDK env.
   CycloneDDS on `eth0`). Device Connect env `dc-repro` = **Python 3.11**. → **BRIDGED.**
 - The chest speaker is DDS on the robot's internal `eth0` (a separate compute host can't reach it),
   so the speaking CLI must run **on the robot, in the SDK env** — the sidecar (3.11) subprocesses to
-  it. This is the `rabia_agent.py` / `rabia_speak.py` split in `unitree/g1/device_connect/`.
+  it. This is the `g1_agent.py` / `g1_speak.py` split in `unitree/g1/device_connect/`.
 
 ## Files
 - [`scripts/probe_dc_env.py`](scripts/probe_dc_env.py) — agentic env probe + UNIFIED/BRIDGED recommendation (pure stdlib).
 - [`scripts/bootstrap_dc_env.sh`](scripts/bootstrap_dc_env.sh) — create a clean ≥3.11 DC env (conda or venv), idempotent.
-- [`references/two-env-bridge.md`](references/two-env-bridge.md) — the bridge architecture + the Rabia worked example.
+- [`references/two-env-bridge.md`](references/two-env-bridge.md) — the bridge architecture + the worked example.
