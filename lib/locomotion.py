@@ -94,6 +94,24 @@ class LocomotionController(abc.ABC):
         """
         return None
 
+    # ── Abort ───────────────────────────────────────────────────────────────
+    _abort_source = None  # set per-instance via set_abort_source
+
+    def set_abort_source(self, source) -> None:
+        """Register a zero-arg callable that returns True when motion must abort
+        (e.g. a controller watcher). The closed-loop helpers poll it every tick
+        and ``stop`` + return ``"aborted"`` the instant it trips.
+
+        Note: this halts the *software* routine and holds balance — it is not an
+        emergency stop. The controller's firmware damping and the robot's
+        physical power/e-stop are the real stop and work even if this process is
+        hung; keep them in reach.
+        """
+        self._abort_source = source
+
+    def _aborted(self) -> bool:
+        return bool(self._abort_source and self._abort_source())
+
     # ── Convenience velocity verbs ──────────────────────────────────────────
     def forward(self, vx: float) -> None:
         self.set_velocity(vx, 0.0, 0.0)
@@ -127,6 +145,9 @@ class LocomotionController(abc.ABC):
         last_cmd = 0.0
 
         while time.monotonic() < deadline:
+            if self._aborted():
+                self.stop()
+                return "aborted"
             p = self.pose()
             dx, dy = target_x - p.x, target_y - p.y
             dist = math.hypot(dx, dy)
@@ -181,6 +202,9 @@ class LocomotionController(abc.ABC):
         last_cmd = 0.0
 
         while time.monotonic() < deadline:
+            if self._aborted():
+                self.stop()
+                return "aborted"
             err = wrap_pi(target_yaw - self.pose().yaw)
             if abs(err) <= tolerance_rad:
                 self.stop()

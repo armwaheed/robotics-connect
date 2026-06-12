@@ -70,6 +70,14 @@ def test_timeout():
     assert res == "timeout", f"expected 'timeout', got {res!r}"
 
 
+def test_abort_source_stops_walk():
+    loco = SimLocomotion()
+    loco.set_abort_source(lambda: loco.pose().x > 0.3)  # trips after a little travel
+    res = loco.walk_to((2.0, 0.0), vmax=FAST, timeout_s=8.0)
+    assert res == "aborted", f"expected 'aborted', got {res!r}"
+    assert loco.pose().x < 1.0, "should have stopped well short of the target"
+
+
 TESTS = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
 
 

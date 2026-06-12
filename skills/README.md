@@ -52,7 +52,7 @@ all of them uniformly.
 
 | Skill | Capability |
 |---|---|
-| [`unitree/g1/depth_camera_sight`](../unitree/g1/depth_camera_sight/SKILL.md) | Head Intel RealSense depth + RGB; floor-plane-calibrated **51.29° down-tilt**; body-frame geometry. |
+| [`unitree/g1/depth_camera_sight`](../unitree/g1/depth_camera_sight/SKILL.md) | Head Intel RealSense depth + RGB; floor-plane-calibrated **51.29° down-tilt**; body-frame geometry. **Depth needs `pyrealsense2` built from source (`install_pyrealsense2.sh`) + `setup_env.sh` sourced** — not a pip install (GLIBC). RGB is dependency-free (DDS). |
 | [`unitree/g1/lidar_sight`](../unitree/g1/lidar_sight/SKILL.md) | Crown Livox MID-360; table/bed detection; **face-frame / chin self-occlusions** characterized on hardware. |
 | [`unitree/g1/arm_fk`](../unitree/g1/arm_fk/SKILL.md) | Pure-numpy URDF forward kinematics; palm XYZ in the camera body frame; **23-DOF-vs-29-DOF** wrist handling. |
 | [`unitree/g1/brainco_touch`](../unitree/g1/brainco_touch/SKILL.md) | Brainco 5-finger hands — digits, touch, proximity (the real hand; the sim uses Inspire). |

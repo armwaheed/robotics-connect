@@ -148,5 +148,9 @@ LiDAR mid/far through-glass returns.*
 
 - Robot: `unitree@192.168.123.164` — G1 EDU, aarch64, `5.10.x-tegra`.
 - Factory `unitree_deploy` conda env present; `robotics-connect` env cloned from it.
-- Depth via librealsense (`/home/unitree/librealsense/build`); RGB via Unitree
-  VideoClient over DDS; LiDAR via DDS topic `rt/utlidar/cloud_livox_mid360`.
+- Depth via **`pyrealsense2`** — built from source at `/home/unitree/librealsense/build` (the PyPI
+  wheel needs GLIBC 2.32 but the EDU ships 2.31, so a pip install imports then fails). Run
+  `depth_camera_sight/install_pyrealsense2.sh` **once per robot**, then **source
+  `depth_camera_sight/setup_env.sh`** so the bindings land on `PYTHONPATH`/`LD_LIBRARY_PATH`/`LD_PRELOAD`
+  — a bare `import pyrealsense2` fails in the conda envs without it. RGB via Unitree VideoClient over
+  DDS (no extra deps); LiDAR via DDS topic `rt/utlidar/cloud_livox_mid360`.

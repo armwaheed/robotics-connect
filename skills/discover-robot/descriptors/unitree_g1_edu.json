@@ -103,6 +103,11 @@
             "type": "depth_camera",
             "model": "Intel RealSense D435i",
             "mount_link": "torso_link",
+            "driver": {
+                "python": "pyrealsense2 2.50.0",
+                "install": "BUILT FROM SOURCE via depth_camera_sight/install_pyrealsense2.sh into /home/unitree/librealsense (NOT pip: the PyPI wheel needs GLIBC 2.32 but the EDU ships 2.31, so a pip install imports then fails).",
+                "runtime": "source depth_camera_sight/setup_env.sh before use (sets PYTHONPATH/LD_LIBRARY_PATH/LD_PRELOAD) — a bare 'import pyrealsense2' fails without it. RGB needs no extra deps (Unitree VideoClient over DDS)."
+            },
             "pose": {
                 "xyz_m": [0.06, 0.0, 0.45],
                 "tilt_deg": 51.29
