@@ -78,6 +78,21 @@ window, or `record_utterance()` for energy-VAD capture (waits for speech, stops 
 | `manual` | keyboard input — loopback / off-robot testing |
 | `auto` | first of whisper → vosk → manual that imports (default) |
 
+### On-robot finding (G1 EDU, verified 2026-06): the native array is a *closed* capture
+
+On a live G1 EDU we exhausted every native path to the 4-mic array and confirmed it is **not
+readable from userspace**: `AudioClient` doesn't expose it (ASR api `1002` is registered but returns
+`3104`); the only ALSA capture node `pcmC1D0c` is held **exclusively** by the factory; even with
+"Wake-up Conversation Mode" on, the wake word opens the mic but the route is **not on the XBAR mux**
+(`ADMAIF1 Mux = None`) so it can't be fanned to a parallel ADMAIF (every DMIC/I2S tap reads
+noise/silence); nothing is republished on `rt/audiosender`/`rt/audio_msg`; and there is **no
+on-board ASR process or voice log** (`master_service` only supervises `ota_pipe` + `video_hub_pc4`).
+**Conclusion:** wake-up mode streams the mic *off-robot* to Unitree's app/cloud — there is no local
+hook. So for "the robot listens," prefer a **USB mic** (clean PulseAudio source — `record_utterance`
+works unchanged) or route the human in as a **Device Connect agent** (a headset + DC sidecar on the
+control host). Tracking the supported on-board path with Unitree in
+[robotics-connect#1](https://github.com/armwaheed/robotics-connect/issues/1).
+
 ## 3. Ask → listen → ground (the help-seeking loop)
 
 `VoiceIO.ask(question, choices)` is the loop the behaviour layer calls. `choices` is `"yesno"`
