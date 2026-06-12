@@ -29,8 +29,9 @@ sim that already matches the robot. robotics-connect is the **real-to-sim** half
 
 The artifact at the center of that loop is the **[robot descriptor](skills/discover-robot/schema/robot_descriptor.schema.json)**:
 a single machine-readable card describing the *real* robot — its actual DOF + joint order, PD gains,
-sensor mounts/tilts/blind-spots, hand morphology, and **how it reconciles with the sim asset** (which
-sim DOFs the real robot lacks). Every Isaac-staging skill consumes it.
+sensor mounts/tilts/blind-spots, **audio I/O** (speaker, and whether the mic is exposed or a closed
+off-board stream), hand morphology, and **how it reconciles with the sim asset** (which sim DOFs the
+real robot lacks). Every Isaac-staging skill consumes it.
 
 ## Layout
 
@@ -38,7 +39,7 @@ sim DOFs the real robot lacks). Every Isaac-staging skill consumes it.
 robotics-connect/
 ├── .claude-plugin/              # the plugin + marketplace manifests (install as a Claude Code plugin)
 ├── skills/                      # robot-AGNOSTIC skills (discovery, perception, Isaac staging, setup)
-│   ├── discover-robot/          #   keystone: emit the real-to-sim robot descriptor
+│   ├── discover-robot/          #   keystone: emit the descriptor (DOF · sensors · audio · compute · hands)
 │   ├── perceive-surfaces/       #   real-robot surface/object perception (LiDAR-first) → body frame
 │   ├── stage-isaac-sensors/     #   sim sensors with the real blind spots
 │   ├── stage-isaac-freebase/    #   free-base USD + deploy gains + DOF reconciliation

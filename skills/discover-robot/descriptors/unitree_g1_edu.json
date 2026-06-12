@@ -199,6 +199,27 @@
             "notes": "The G1 has a rear expansion port for an optional Jetson Thor — a SEPARATE compute node (own CPU+GPU+OS), NOT a cuda:N on the Orin. Not attached on this unit (probe returns present=false). When installed, run a vision sidecar on the Thor and set 'host' to its address; clients target host:9878 (the sidecar binds 0.0.0.0 and takes VISION_SIDECAR_HOST/PORT/DEVICE)."
         }
     ],
+    "audio": {
+        "speaker": {
+            "present": true,
+            "api": "Unitree AudioClient (DDS \"voice\" service)",
+            "tts": true,
+            "tts_voices": { "0": "zh", "1-4": "en" },
+            "pcm_format": "16kHz/mono/16-bit LE (PlayStream)",
+            "notes": "TtsMaker verified speaking on the EDU; PlayStream for bring-your-own PCM; SetVolume sets the PERSISTENT master gain. See unitree/g1/voice."
+        },
+        "microphone": {
+            "present": true,
+            "exposed_to_userspace": false,
+            "access": "closed_offboard_stream",
+            "notes": "Unitree engineering support CONFIRMED the G1 mic is NOT a developer interface: only the built-in ASR (https://support.unitree.com/home/en/G1_developer/VuiClient_Service), or an external USB-C mic/speaker array for custom speech. Exhaustively reproduced on the EDU: ASR api 1002 -> 3104; the only ALSA capture node held exclusively by the factory; wake-word capture not on the XBAR mux; no rt/audiosender republish; no on-board ASR log. Wake-up Conversation Mode streams the mic off-robot to the vendor app/cloud."
+        },
+        "asr": {
+            "onboard": false,
+            "path": "human as a Device Connect agent (Bluetooth headset + local whisper -> human_agent), or an external USB-C mic array + local ASR"
+        },
+        "recommended_listen_path": "device_connect_human_agent"
+    },
     "walk_policy": {
         "source": "unitree_rl_lab velocity-walk (exported ONNX, Isaac-Lab-native); run as a torch MLP on GPU (no onnxruntime GPU on aarch64). See deploy-policy + locomotion.",
         "obs_spec": "480-D = 5-step term-major history of [base_ang_vel*0.2 (3), projected_gravity (3), velocity_commands (3), joint_pos_rel (29), joint_vel_rel*0.05 (29), last_action (29)].",

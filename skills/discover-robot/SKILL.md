@@ -98,6 +98,23 @@ Jetson host's torch is usually CPU-only), or `nvidia-smi` — and probes any dec
 **placed + targeted from `compute`**: run the sidecar on whichever node has the accelerator and point
 clients at its `host:port` (see [`unitree-g1-vision-sidecar`](../../unitree/g1/vision_sidecar/SKILL.md)).
 
+### 3c. Characterize audio I/O (speaker + mic + ASR)
+A humanoid may speak through an SDK audio service, a plain ALSA codec, or not at all; its mic may be a
+normal capture device, a DDS topic, or a **CLOSED off-board stream** the firmware ships to a vendor
+app/cloud with no userspace hook. Fill the descriptor's `audio` block:
+
+```bash
+python scripts/discover_audio.py [--sdk unitree]
+```
+
+It probes the speaker (an SDK audio client, else `aplay -l`), the mic (`arecord -l` codecs; the
+closed-system signature when the only nodes are Tegra APE/XBAR *virtual* devices; a USB mic), and any
+on-board ASR, then emits a **`recommended_listen_path`**: `onboard` if the mic is exposed, else a local
+USB/ALSA mic, else **route a human in as a Device Connect agent** (`device_connect_human_agent`). The G1
+EDU resolves to the last — its mic is a `closed_offboard_stream` (Unitree-confirmed; not a developer
+interface), so the human is the [human_agent](../../human_agent/SKILL.md) ↔
+[device_connect](../../unitree/g1/device_connect/SKILL.md) loop rather than the robot's own array.
+
 ### 4. Characterize the hands
 Record `hands.model`, `fingers`, `dof`, `control`, `tactile`. Finger COUNT is what matters for picking
 a sim hand (see step 5) — match morphology, not brand.

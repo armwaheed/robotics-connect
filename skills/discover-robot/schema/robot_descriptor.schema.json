@@ -385,6 +385,51 @@
                 }
             }
         },
+        "audio": {
+            "type": "object",
+            "description": "The robot's audio I/O, characterized on the hardware. Vendor-neutral: a humanoid may speak through an SDK audio service, an ALSA codec, or not at all; its mic may be a normal capture device, a DDS topic, or a CLOSED off-board stream with no userspace hook. discover_audio.py fills this, and the human<->robot voice path (including whether to route a human in as a Device Connect agent) is chosen from it.",
+            "additionalProperties": false,
+            "properties": {
+                "speaker": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "present": { "type": "boolean" },
+                        "api": { "type": "string", "description": "How playback is driven, e.g. 'Unitree AudioClient (DDS \"voice\" service)' or 'ALSA aplay'." },
+                        "tts": { "type": "boolean", "description": "Built-in text-to-speech available?" },
+                        "tts_voices": { "type": "object", "description": "Voice id -> language/label, e.g. {\"0\": \"zh\", \"1-4\": \"en\"}." },
+                        "pcm_format": { "type": "string", "description": "Required raw-PCM format for bring-your-own audio, e.g. '16kHz/mono/16-bit'." },
+                        "notes": { "type": "string" }
+                    }
+                },
+                "microphone": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "present": { "type": "boolean" },
+                        "exposed_to_userspace": { "type": "boolean", "description": "Can your code read the mic at all? false = a closed system (see access)." },
+                        "access": { "type": "string", "enum": ["usb", "alsa_codec", "dds_topic", "closed_offboard_stream", "none"], "description": "Vendor-neutral taxonomy of how (if at all) the mic is reachable. 'closed_offboard_stream' = the firmware streams the mic off-robot (e.g. to a vendor app/cloud) with no local userspace hook." },
+                        "alsa_node": { "type": "string" },
+                        "dds_topic": { "type": "string" },
+                        "format": { "type": "string" },
+                        "notes": { "type": "string" }
+                    }
+                },
+                "asr": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "onboard": { "type": "boolean", "description": "Does the robot run speech recognition on-board, reachable by your code?" },
+                        "path": { "type": "string", "description": "If onboard, how; otherwise the recommended listen path, e.g. 'usb mic + local whisper' or 'human as a Device Connect agent'." }
+                    }
+                },
+                "recommended_listen_path": {
+                    "type": "string",
+                    "enum": ["onboard", "usb", "dds_topic", "device_connect_human_agent"],
+                    "description": "Given the above, how a robot SHOULD listen to a human: onboard if exposed, else a USB mic, else route a human in as a Device Connect agent."
+                }
+            }
+        },
         "walk_policy": {
             "type": "object",
             "description": "The deploy obs/action layout of the robot's walking policy — needed to deploy a policy out of the RL env and to set the reach policy's neutral to the walk default.",
