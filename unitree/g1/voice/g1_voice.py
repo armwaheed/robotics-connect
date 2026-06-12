@@ -97,7 +97,7 @@ class G1Speaker:
         self,
         iface: Optional[str] = None,
         domain: int = 0,
-        default_volume: int = 85,
+        default_volume: int = 100,  # full speaker gain; None = leave the robot's volume untouched
         app_name: str = "robotics-connect",
         init_dds: bool = True,
         wpm: float = 165.0,
@@ -130,6 +130,8 @@ class G1Speaker:
             self._client.SetTimeout(10.0)
             self._client.Init()
             if self.default_volume is not None:
+                # SetVolume sets the robot's MASTER speaker gain (persists, and affects even the
+                # factory mode-switch announcements) — keep it at full so the robot is audible.
                 self._client.SetVolume(int(self.default_volume))
             self._available = True
         except Exception as exc:  # no SDK / no robot / service busy → console fallback

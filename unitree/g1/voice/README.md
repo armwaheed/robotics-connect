@@ -49,6 +49,12 @@ estimate of the spoken duration — this is also how we **gate the mic** (see §
 validator rejects anything else). Resample your own TTS to that before `play_pcm`. `TtsMaker`
 takes plain text and needs no format handling.
 
+> **`SetVolume` sets the PERSISTENT MASTER gain.** It survives across sessions and softens *everything*
+> — including the robot's own factory mode-switch announcements. `G1Speaker` defaults to `100`
+> (full); pass `default_volume=None` to leave the robot's volume untouched. If a prior run left it low,
+> restore it with [`restore_speaker_volume.py`](restore_speaker_volume.py) (`GetVolume` → `SetVolume`
+> → spoken confirm). Verified on the EDU: a prior session left it at **60**, restored to **100**.
+
 ## 2. Listen — NOT in the SDK; capture the mic at the OS level
 
 **The Unitree SDK does not expose the microphone.** `AudioClient` registers an ASR api id (1002)
