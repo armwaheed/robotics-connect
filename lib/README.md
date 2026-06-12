@@ -24,6 +24,17 @@ instead of carrying its own copy:
 from device_connect_sidecar import HAVE_DC, DeviceDriver, rpc, emit, build_runtime
 ```
 
+> **Why two drivers share this — the human-agent path.** The bed-making G1 can't hear its human
+> partner through its own microphone: Unitree engineering support confirmed (support work order, June
+> 2026) that the G1's mic is **not a developer interface** — the only supported options are the
+> built-in automatic speech recognition documented under
+> [VuiClient_Service](https://support.unitree.com/home/en/G1_developer/VuiClient_Service), or attaching
+> an external mic/speaker array over the USB-C ports. So instead of cracking the onboard array, the
+> human joins the **Device Connect** fabric as their own agent — a Bluetooth headset plus a sidecar
+> that runs local ASR — and the robot asks over its speaker and hears the reply over Device Connect.
+> Both sides of that loop (`human_agent/human_agent.py` and `unitree/g1/device_connect/g1_agent.py`)
+> are Device Connect drivers built on the boilerplate below — which is exactly why it lives here once.
+
 ## Why the cross-reference to Arm's Device Connect
 
 **This module is a thin wrapper, not a reimplementation.** The actual runtime — `DeviceRuntime`, the

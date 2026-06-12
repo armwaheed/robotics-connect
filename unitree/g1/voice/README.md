@@ -96,7 +96,24 @@ on-board ASR process or voice log** (`master_service` only supervises `ota_pipe`
 **Conclusion:** wake-up mode streams the mic *off-robot* to Unitree's app/cloud — there is no local
 hook. So for "the robot listens," prefer a **USB mic** (clean PulseAudio source — `record_utterance`
 works unchanged) or route the human in as a **Device Connect agent** (a headset + DC sidecar on the
-control host). Tracking the supported on-board path with Unitree in
+control host).
+
+### Unitree engineering support confirmed it — and named the supported alternative
+
+We took this to Unitree directly, and their engineering support confirmed the finding (support work
+order, June 2026): **there is no way to interface with or develop against the G1's microphone.** The
+only supported speech path is the robot's built-in automatic speech recognition — together with the
+other voice-UI features documented under
+[VuiClient_Service](https://support.unitree.com/home/en/G1_developer/VuiClient_Service). If you want
+to write your own speech recognition (or anything else that needs the raw mic), Unitree's guidance is
+to **connect an external microphone/speaker array over the USB-C ports** rather than tap the built-in
+array.
+
+So the closed-capture result above isn't a firmware gap to route around — it's by design. That leaves
+exactly the two listen paths this module already supports: a **USB(-C) mic** as a clean PulseAudio
+source, or routing the human in as a **Device Connect agent** (headset + sidecar on the control host).
+The bed-making demo uses the latter, which is why the robot can work *with* a human without ever
+reading its own array. Discussion in
 [robotics-connect#1](https://github.com/armwaheed/robotics-connect/issues/1).
 
 ## 3. Ask → listen → ground (the help-seeking loop)
@@ -156,4 +173,7 @@ backend (`faster-whisper` recommended on the Orin); without one the listener fal
 SDK source the API was read from (signatures verbatim): `unitree_sdk2py/g1/audio/g1_audio_client.py`,
 `g1_audio_api.py`, `example/g1/audio/{g1_audio_client_example.py,wav.py}`;
 [issue #80](https://github.com/unitreerobotics/unitree_sdk2_python/issues/80) (mic missing);
-OM1 G1 docs (PulseAudio mic + ASR). Official: support.unitree.com `G1_developer/VuiClient_Service`.
+OM1 G1 docs (PulseAudio mic + ASR). Official: Unitree engineering support (work order, June 2026 — the
+mic is not a developer interface; use the built-in ASR documented at
+[`G1_developer/VuiClient_Service`](https://support.unitree.com/home/en/G1_developer/VuiClient_Service),
+or attach an external mic/speaker array over USB-C for custom speech).
