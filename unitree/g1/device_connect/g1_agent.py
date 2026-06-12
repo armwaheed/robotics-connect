@@ -38,8 +38,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # repo root, for dc_sidecar
-from dc_sidecar import (  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))  # for device_connect_sidecar
+from device_connect_sidecar import (  # noqa: E402
     HAVE_DC, DeviceDriver, rpc, emit, DeviceIdentity, DeviceStatus, build_runtime, DEFAULT_NATS_URL,
 )
 

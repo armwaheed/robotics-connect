@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Shared Device Connect sidecar helpers.
+"""Shared Device Connect sidecar helpers (robotics-connect/lib).
 
 The boilerplate that every Device Connect device sidecar in robotics-connect shares — the SDK
 import-shim and the credential/URL resolution — lives HERE, in one place, so the drivers
 (`human_agent/human_agent.py`, `unitree/g1/device_connect/g1_agent.py`, and any future robot agent)
 don't carry their own divergent copies.
 
-  from dc_sidecar import (HAVE_DC, DeviceDriver, rpc, emit, DeviceIdentity, DeviceStatus,
-                          build_runtime, DEFAULT_NATS_URL)
+  from device_connect_sidecar import (HAVE_DC, DeviceDriver, rpc, emit, DeviceIdentity,
+                                      DeviceStatus, build_runtime, DEFAULT_NATS_URL)
+
+UPSTREAM — this is a THIN WRAPPER over Arm's official Device Connect, not a reimplementation:
+  https://github.com/arm/device-connect  (the `device-connect-edge` package; built against 0.2.4).
+`DeviceDriver`/`rpc`/`emit`/`DeviceRuntime`/`DeviceIdentity`/`DeviceStatus` are re-exported verbatim
+from `device_connect_edge`; the stubs below are ONLY a no-SDK fallback so a driver still imports
+(e.g. for an offline `--self-test`). If Arm changes that API, update here. See lib/README.md.
 """
 
 from __future__ import annotations

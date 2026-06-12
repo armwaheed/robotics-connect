@@ -41,10 +41,11 @@ import sys
 from typing import Dict, List, Optional, Sequence, Union
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, _HERE)                       # for bt_headset
-sys.path.insert(0, os.path.dirname(_HERE))      # repo root, for dc_sidecar
+_REPO = os.path.dirname(_HERE)
+sys.path.insert(0, _HERE)                          # for bt_headset
+sys.path.insert(0, os.path.join(_REPO, "lib"))     # for device_connect_sidecar (robotics-connect/lib)
 from bt_headset import RATE, Headset, discover  # noqa: E402
-from dc_sidecar import (  # noqa: E402
+from device_connect_sidecar import (  # noqa: E402
     HAVE_DC, DeviceDriver, rpc, emit, DeviceIdentity, DeviceStatus, build_runtime, DEFAULT_NATS_URL,
 )
 
@@ -131,7 +132,7 @@ def make_asr(backend: str = "auto", model: str = "base.en"):
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════
-#  The Device Connect driver  (DeviceDriver/rpc/emit/identity/status come from dc_sidecar)
+#  The Device Connect driver  (DeviceDriver/rpc/emit/identity/status come from device_connect_sidecar)
 # ══════════════════════════════════════════════════════════════════════════════════════════════
 
 
@@ -250,7 +251,7 @@ class HumanAgentDriver(DeviceDriver):
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════
-#  Sidecar entry point  (creds + URL resolution + DeviceRuntime live in dc_sidecar.build_runtime)
+#  Sidecar entry point  (creds + URL resolution + DeviceRuntime live in device_connect_sidecar.build_runtime)
 # ══════════════════════════════════════════════════════════════════════════════════════════════
 
 
