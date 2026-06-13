@@ -93,3 +93,31 @@ a novel humanoid's training against.
 ## Hand-off
 
 Train → eval (verify by eye) → `deploy-policy` to run the exported policy out of the RL harness.
+
+## Sim-to-real obs design — asymmetric actor-critic for a deployable observation
+
+A policy can only use observations the **real robot can produce**. The G1's **base linear velocity** is not
+reliably observable on hardware (the deploy used a noisy leg-kinematics odom estimate), so it must be excluded
+from the **actor**. But dropping it from the **critic** too **starves the value function** — in this project
+`reach_coarse` peaked at 0.39 then *regressed* to 0.29 (ep_len ~210/400, topples ~30%).
+
+**Fix: asymmetric actor-critic.** Define two observation groups — `policy` (actor, deployable: no
+`base_lin_vel`) and `critic` (privileged, sim-only: includes `base_lin_vel` + any other privileged terms,
+clean/no-noise). rsl-rl 5.x uses the `critic` group for the value net automatically (it warns and falls back
+to `policy` only if `critic` is absent). The deployed actor stays small; the critic keeps the velocity signal.
+Result here: `reach_coarse` **0.59 monotonic**, ep_len **394/400**, robust — recovering nearly all the
+performance lost by dropping `base_lin_vel`, while the actor stays hardware-deployable (82-D).
+
+```python
+class ObservationsCfg:
+    class PolicyCfg(ObsGroup):   # ACTOR — deployable; NO base_lin_vel
+        base_ang_vel = ...; projected_gravity = ...; <command> = ...; joint_pos = ...; joint_vel = ...; actions = ...
+    class CriticCfg(ObsGroup):   # CRITIC — sim-only privileged; KEEPS base_lin_vel; enable_corruption=False
+        base_lin_vel = ...; base_ang_vel = ...; projected_gravity = ...; <command> = ...; joint_pos = ...; joint_vel = ...; actions = ...
+    policy: PolicyCfg = PolicyCfg()
+    critic: CriticCfg = CriticCfg()
+```
+
+Also: judge convergence by `reach_coarse` + ep-len + the **rendered eval**, not the regularizer-dominated mean
+reward; keep reward terms few (<10, vs heavy 20+-term shaping). Refs: [FALCON (arXiv 2505.06776)](https://arxiv.org/abs/2505.06776),
+[Isaac Lab sim-to-real / privileged obs](https://isaac-sim.github.io/IsaacLab/main/source/experimental-features/newton-physics-integration/sim-to-real.html).

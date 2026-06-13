@@ -88,3 +88,25 @@ isaaclab -p .../stage-isaac-freebase/scripts/check_spawn.py \
 ```
 
 If `check_spawn` prints `OVERALL: PASS`, the host stack is healthy and you can train.
+
+## Performance — the GB10 GPU "stuck low-power" trap (check this FIRST when training is slow)
+
+The GB10's GPU power controller can get **trapped in a low-power state** (triggered by a crash, a failed
+load, sleep/wake, or many heavy back-to-back jobs). Symptom: under load `nvidia-smi` shows **high util
+(~80–96%) but the SM clock pinned to a small fraction of max** (we saw **507 MHz vs a 2418 MHz app clock /
+3003 MHz max**) at only a few watts and a cool ~40 °C — i.e. **not thermal, not CPU-bound, not contention.**
+It silently makes training **~3–5× slower** (a 2048-env whole-body job went 67 min → 213 min).
+
+Diagnose (the clock-vs-max gap is the tell — Performance State still reads `P0` and Clock Event Reasons read
+"Not Active", which is misleading):
+```bash
+nvidia-smi --query-gpu=utilization.gpu,clocks.sm,clocks.max.sm,temperature.gpu,power.draw --format=csv
+# verify under real load: torch matmul burn while sampling — healthy = clocks.sm boosts to ~2000-3000 MHz
+```
+**Fix: a full AC power cycle is the ONLY one** — shut down → **unplug the power adapter from the wall** (≥60 s;
+a normal reboot does NOT clear it — residual power keeps the controller latched) → replug → boot. After the
+cycle the GPU boosts to its full clock (~2500 MHz / ~100 W under load). Diagnostic tool:
+[spark-doctor](https://github.com/joeynyc/spark-doctor). Refs:
+[NVIDIA forum 370304](https://forums.developer.nvidia.com/t/dgx-spark-grace-blackwell-gb10-performance-drop-gpu-trapped-in-15w-650mhz-loop-with-50-c-artificial-t-limit-temp/370304),
+[step-by-step fix](https://dredyson.com/fix-dgx-spark-performance-degradation-gpu-power-draw-issue-in-under-5-minutes-actually-works-a-complete-step-by-step-beginners-guide-to-resolving-the-14w-power-cap-low-token-rate-and-stuck-pe/).
+**Lesson: check the clock-vs-max before blaming a config change.**
