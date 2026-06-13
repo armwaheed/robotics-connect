@@ -74,8 +74,50 @@ Walking to a position, deciding to release / retry / ask a peer, and avoiding an
 intractable). The deploy pattern is: behaviour picks the target and the walk→reach handoff;
 `VelocityWalker` gets the robot there; `ReachPolicy` does the planted, balanced, ambidextrous reach.
 
+## On hardware — the de-risk ladder + low-level takeover
+
+Running the policy in a control loop (above) is not the same as putting it on the **real motors**.
+A whole-body policy drives the legs, so deploying it means taking the legs **off the vendor balance
+controller** and letting the RL net balance — a first transfer **falls if anything is off, fast
+(sub-second)**. Stage it as a ladder; each rung gates the next (full rationale + the stop hierarchy
+in [SAFETY.md](../../SAFETY.md)):
+
+| Rung | Runs | Fall risk | Mechanism |
+|---|---|---|---|
+| **0 offline** | obs+policy, **printed**, no commands | none | read `rt/lowstate`; build the obs; print actions |
+| **1 partial** | policy's **arms only**, legs on vendor balance | none | `rt/arm_sdk` weight-blend overlay (`motor_cmd[29].q = weight`) |
+| **2 whole-body** | all joints, vendor balance **released** | **HIGH** | `MotionSwitcher.ReleaseMode` + `rt/lowcmd`, robot on a **gantry** |
+
+**Verify the joint order from the ACTUAL env, not just the descriptor.** IsaacLab orders the
+articulation DOFs **interleaved (left/right pairs by tree depth)** — e.g. action index 9 is
+`left_shoulder_pitch`, sitting *between* the knees (7,8) and ankles (11,12). That is **not** the
+Unitree SDK's `0..28` index order. Dump the ground-truth contract by booting the exact training env
+and reading `robot.joint_names` / the action term's resolved order + scale + default offset
+(`armwaheed/robots#3 rl/dump_deploy_contract.py → deploy_contract.json`), then map sim↔SDK **by joint
+name**. Self-check at rung 0: the predicted standing-pose offsets must land on the named joints
+(G1 BalanceStand crouch → `left_knee joint_pos_rel ≈ +0.2`, `hip_pitch ≈ −0.17`, arms ≈ 0).
+
+**G1 EDU motor table (verified live):** indexed like the 29-DOF G1 — legs 0–11, `waist_yaw` 12,
+L-arm 15–19, R-arm 22–26; the 6 joints the EDU lacks (13,14,20,21,27,28) are **present-but-zero**
+and never in the 23-joint action set.
+
+**Rung-2 takeover (the parts that bite):**
+- **Release the vendor controller and VERIFY it.** Loop `CheckMode()`/`ReleaseMode()` past transient
+  RPC misses (`CheckMode` returns `(code, None)` on a miss); if you can't confirm release, **abort
+  without taking over** — never let `rt/lowcmd` fight the vendor controller.
+- **Match the sim PD gains** (G1 bed-reach: hip 100/2, knee 150/4, ankle 40/2, waist 200/5, arms 40/10).
+  Set `mode_pr=PR`, echo `mode_machine` from `rt/lowstate`, `motor_cmd[i].mode=1`.
+- **Motion-blend the handover.** The vendor `BalanceStand` crouch is out-of-distribution for the
+  policy (G1 knee ≈ 0.52 vs sim 0.30) — hold the captured pose, then ramp the target from it to the
+  policy output over ~2–3 s. Same idea on rung 1 (ramp the `arm_sdk` weight 0→1 holding the live pose).
+- **Wrap the loop in [`SafeStop`](../../lib/safe_stop.py)** so it damps on return/exception/SIGINT/
+  SIGTERM, and **never `kill -9`** it (a hard kill latches the last high-gain command → runaway; this
+  broke a window once — SAFETY.md §0). Abort/end → low-level damp (`kp=0, kd≈3`).
+
 ## Generalization
 
 `ReachPolicy` and `VelocityWalker` take the joint set, EE links, and scales from the descriptor, so the
 same deploy code runs a 23-DOF or 29-DOF G1, or a new humanoid, once its descriptor and exported policy
-exist. The only robot-specific knowledge is in the descriptor — which is the whole point.
+exist. The only robot-specific knowledge is in the descriptor — which is the whole point. The hardware
+ladder above is likewise robot-agnostic: only the damp/release/gain bindings change per robot, and the
+**safe-stop contract ([`lib/safe_stop.py`](../../lib/safe_stop.py)) is mandatory for every robot.**

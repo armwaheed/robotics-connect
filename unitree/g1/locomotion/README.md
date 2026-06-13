@@ -23,7 +23,8 @@ from g1_locomotion import G1Locomotion
 
 loco = G1Locomotion(iface="eth0")
 loco.connect()                 # LocoClient + rt/odommodestate
-loco.stand()                   # legs take the weight (balanced stand)
+# Robot must ALREADY be standing (stand it with the controller, or loco.squat_to_stand()
+# if it is crouched). Walking is just velocity from a balanced stand — no stand() needed.
 loco.walk_forward(2.0)         # 2 m ahead, closed-loop on measured odometry
 loco.stop()
 ```
@@ -38,9 +39,31 @@ same `walk_to` / `turn_to` / `walk_forward` helpers — the G1 is one binding.
 `G1Locomotion.set_velocity(vx, vy, vyaw)` calls `LocoClient.Move` — the
 manufacturer's high-level velocity interface, so **balance is the controller's
 job**. No reinforcement-learning policy is pushed onto the legs. Lifecycle:
-`stand()` → `BalanceStand`, `damp()` → `Damp`, `stop()` → `StopMove`.
+`squat_to_stand()` → `Squat2StandUp` (lift from a squat), `stand(mode)` →
+`BalanceStand(mode)` (set balance mode), `damp()` → `Damp`, `stop()` → `StopMove`.
 
 Body frame is `+x` forward, `+y` left, `+yaw` counter-clockwise (REP-103).
+
+## 1a. Hardware-verified gotchas (G1 EDU, current SDK)
+
+These cost real debugging on hardware — they are baked into the binding, but know them:
+
+- **`BalanceStand` needs a `balance_mode` arg** on the current SDK (it is `SetBalanceMode`
+  underneath: `0` = static, `1` = continuous gait). Calling it with no arg raises `TypeError`.
+  It only sets the mode — it does **not** lift the robot from a squat. The robot must already be
+  standing; **walking is just `set_velocity` from a stand** (no `stand()` call needed on the walk
+  path).
+- **Use `continous_move=True`.** `LocoClient.Move(vx,vy,vyaw)` defaults to a **1 s velocity
+  pulse**; re-issuing it every 0.1 s in the closed loop makes the gait **re-ramp from rest each
+  tick** → a ~0.03 m/s shuffle that also trips the stall guard. `set_velocity` passes
+  `continous_move=True` for a sustained gait (measured ~0.2–0.35 m/s). This removes the 1 s
+  dead-man, so **every exit must `stop()`** — wrap the walk in a `finally` (see
+  [SAFETY.md](../../../SAFETY.md)).
+- **The stall guard is a speed check, not an obstacle sensor.** `is_blocked` flags "commanded but
+  measured speed < fraction × commanded for a grace window." The G1's low-speed stepping gait dips
+  toward zero velocity *between steps*, so a tight threshold false-trips on open ground — calibrated
+  loose (`STALL_SPEED_FRACTION=0.10`, `STALL_GRACE_S=4.0`). Don't read a "stalled" as "there's a
+  wall"; read it as "not achieving commanded speed."
 
 ## 2. Localize — measured, not commanded
 
@@ -78,7 +101,9 @@ The closed-loop API is unchanged when the backend is swapped for the heavy path:
 `set_velocity`, `stand`, and the `walk_*` helpers **move the legs**. The caller
 owns the physical preconditions: a clear area, an operator on the e-stop, and
 adequate battery. The CLI's `--forward` requires a typed confirmation; the
-default run only streams the measured pose (no motion).
+default run only streams the measured pose (no motion). Read the repo-wide
+[**SAFETY.md**](../../../SAFETY.md) — the stop hierarchy and the rule that you
+**never `kill -9`** a process that is commanding the legs.
 
 ```bash
 python g1_locomotion.py --iface eth0            # stream measured pose, no motion

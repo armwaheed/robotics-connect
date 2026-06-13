@@ -51,8 +51,11 @@ LocomotionController = _locomotion.LocomotionController
 Pose = _locomotion.Pose
 
 ODOM_TOPIC = "rt/odommodestate"
-STALL_SPEED_FRACTION = 0.30  # measured/commanded speed below this counts as stalled
-STALL_GRACE_S = 1.5          # ...sustained for this long → blocked
+# The G1's low-speed stepping gait genuinely dips toward zero forward velocity
+# between steps, so a tight "measured vs commanded" ratio false-trips as a stall
+# on open ground. Calibrated loose: only a sustained, near-total stop counts.
+STALL_SPEED_FRACTION = 0.10  # measured/commanded speed below this counts as stalled
+STALL_GRACE_S = 4.0          # ...sustained for this long → blocked
 
 _dds_ready = False
 
@@ -121,17 +124,33 @@ class G1Locomotion(LocomotionController):
                 pass
             self._sub = None
 
-    def stand(self) -> None:
-        """Bring the robot to a stable balanced stand (legs take the weight)."""
-        self._client.BalanceStand()
+    def stand(self, balance_mode: int = 0) -> None:
+        """Set the vendor balance mode (0 = static stand, 1 = continuous gait).
+
+        GOTCHA: on the current G1 SDK ``LocoClient.BalanceStand`` REQUIRES a ``balance_mode``
+        argument (it is ``SetBalanceMode`` underneath). It only sets the mode — it does NOT lift
+        the robot from a squat. The robot must ALREADY be standing (stood up via the controller
+        or :meth:`squat_to_stand`). Walking is just :meth:`set_velocity` from a balanced stand;
+        you do not need to call this at all on the walk path."""
+        self._client.BalanceStand(balance_mode)
+
+    def squat_to_stand(self) -> None:
+        """Stand up from a squat (``Squat2StandUp``). Cycles the robot if already standing —
+        only use it when the robot is actually crouched/seated."""
+        self._client.Squat2StandUp()
 
     def damp(self) -> None:
-        """Drop to soft damping. Collapses the robot — only when supported."""
+        """Drop to soft damping. Collapses the robot — only when supported (gantry)."""
         self._client.Damp()
 
     # ── Primitives ──────────────────────────────────────────────────────────
     def set_velocity(self, vx: float, vy: float, vyaw: float) -> None:
-        self._client.Move(vx, vy, vyaw)
+        # continous_move=True commands a *sustained* velocity instead of a 1 s
+        # pulse, so the gait controller does not re-ramp from rest on every
+        # re-issue (the closed loop refreshes the target ~10×/s). This removes
+        # the 1 s dead-man, so every exit path calls stop()/StopMove and callers
+        # must guard the walk in a finally that stops the robot.
+        self._client.Move(vx, vy, vyaw, continous_move=True)
 
     def stop(self) -> None:
         if self._client is not None:

@@ -4,6 +4,12 @@
 real-to-sim-stage a humanoid robot — from plugged-in on the bench, to driving it through a real task
 with a human in the loop, to a sim-to-real-valid Isaac Lab RL job on a DGX Spark.**
 
+> ⚠️ **Before running any on-hardware control, read [SAFETY.md](SAFETY.md).** It is the
+> non-negotiable safety layer for commanding a real humanoid's motors — the stop hierarchy, the
+> de-risk ladder for deploying a whole-body policy, and the cardinal rule (**never `kill -9` a
+> low-level control process** — it latches the last high-gain command and the robot runs away).
+> Every motor-command process must wrap its loop in [`lib/safe_stop.py`](lib/safe_stop.py).
+
 robotics-connect is a collection of [Claude Code **Agent Skills**](skills/README.md) plus the
 verified-on-hardware control stacks they wrap. It has **two pillars**, both driven by the same robot
 descriptor:
