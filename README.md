@@ -19,8 +19,9 @@ descriptor:
   hear from a human partner** over **Device Connect**, grip with the **hands**, and **abort from the
   controller** — the layers behind a real bed-making G1 that asks a person for help when it gets stuck.
 - **Real-to-sim staging.** **Discover and characterize** the robot's real sensor + effector envelope
-  into a machine-readable descriptor, **stage a sensor-calibrated, free-base Isaac Lab RL job** from it,
-  and **deploy the trained policy** back out into a control loop.
+  into a machine-readable descriptor, **stage a sensor-calibrated, free-base Isaac Lab RL job** from it
+  (with deploy-safe observations — privileged terms to the critic only), and **deploy the trained policy**
+  back out into a control loop — and, through a **safety-gated de-risk ladder**, onto the **real motors**.
 
 The same flow generalizes to a new humanoid by re-running the skills.
 
@@ -59,6 +60,7 @@ robotics-connect/
 │       ├── lidar_sight/         #   crown Livox MID-360 perception
 │       ├── locomotion/          #   walk / navigate to a goal (LocoClient + measured odometry + A*)
 │       ├── controller/          #   handheld-remote read → any-button routine abort
+│       ├── deploy/              #   put a sim policy on the real motors (G1 RobotIO for the de-risk ladder)
 │       ├── voice/               #   speak + listen (TTS out, mic→ASR, grounded reply)
 │       ├── device_connect/      #   the robot as a Device Connect agent (asks a human for help)
 │       ├── arm_fk/              #   pure-numpy URDF forward kinematics
@@ -67,7 +69,8 @@ robotics-connect/
 │       ├── install/             #   on-robot deploy / uninstall / offline bundle
 │       └── connect/             #   host ↔ robot networking (configure_*.sh + CycloneDDS)
 ├── human_agent/                 # a HUMAN as a Device Connect device (headset + ASR; the robot asks it for help)
-├── lib/                         # shared modules (the Device Connect sidecar boilerplate, one copy)
+├── lib/                         # robot-AGNOSTIC layers: safe_stop · policy_deploy (de-risk ladder) · locomotion · navigation · DC sidecar
+├── SAFETY.md                    # ⚠️ non-negotiable: stop hierarchy + de-risk ladder + never kill -9 a motor process
 └── assets/media/                # validation media — the "what good looks like" reference standards
 ```
 
