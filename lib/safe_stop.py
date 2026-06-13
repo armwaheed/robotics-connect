@@ -26,9 +26,8 @@ Usage (must be entered on the MAIN thread so signals are delivered):
     with SafeStop(damp_once, name="bedreach"):
         run_control_loop()         # 50 Hz; poll the controller abort each tick
 
-Standalone panic-damp (run from a SECOND shell to make a runaway inert WITHOUT approaching it):
-
-    python -m lib.safe_stop            # demo with a mock; real use wires damp_fn to the robot
+Standalone panic-damp — wire ``damp_fn`` to the robot and call :func:`panic_damp` from a SECOND
+shell to make a runaway inert WITHOUT approaching it. Tests: ``python3 test_safe_stop.py``.
 """
 from __future__ import annotations
 
@@ -137,36 +136,4 @@ class SafeStop:
         self.damp("atexit")
 
 
-def _selftest() -> None:
-    """Off-robot check: a mock damp_fn must fire exactly once on each exit path."""
-    calls = {"n": 0}
-    def mock_damp():
-        calls["n"] += 1
-
-    # normal exit
-    with SafeStop(mock_damp, name="test", hold_s=0.04, hz=50, verbose=False):
-        pass
-    assert calls["n"] > 0, "damp did not run on normal exit"
-    print(f"normal exit: damped ({calls['n']} cmds)")
-
-    # exception exit
-    calls["n"] = 0
-    try:
-        with SafeStop(mock_damp, name="test", hold_s=0.04, hz=50, verbose=False):
-            raise RuntimeError("boom")
-    except RuntimeError:
-        pass
-    assert calls["n"] > 0, "damp did not run on exception"
-    print(f"exception exit: damped ({calls['n']} cmds)")
-
-    # idempotent: damping twice only fires the first
-    s = SafeStop(mock_damp, name="test", hold_s=0.04, hz=50, verbose=False)
-    calls["n"] = 0
-    s.damp("a"); first = calls["n"]; s.damp("b")
-    assert calls["n"] == first, "damp was not idempotent"
-    print("idempotent: second damp() is a no-op")
-    print("safe_stop selftest OK")
-
-
-if __name__ == "__main__":
-    _selftest()
+__all__ = ["SafeStop", "panic_damp"]

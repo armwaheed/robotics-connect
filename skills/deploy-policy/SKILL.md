@@ -80,7 +80,9 @@ Running the policy in a control loop (above) is not the same as putting it on th
 A whole-body policy drives the legs, so deploying it means taking the legs **off the vendor balance
 controller** and letting the RL net balance — a first transfer **falls if anything is off, fast
 (sub-second)**. Stage it as a ladder; each rung gates the next (full rationale + the stop hierarchy
-in [SAFETY.md](../../SAFETY.md)):
+in [SAFETY.md](../../SAFETY.md)). The robot-agnostic implementation is
+[`lib/policy_deploy.py`](../../lib/policy_deploy.py) (contract + obs builder + the three rungs, with
+[`SafeStop`](../../lib/safe_stop.py) baked into every motion stage); a robot supplies a `RobotIO`:
 
 | Rung | Runs | Fall risk | Mechanism |
 |---|---|---|---|
